@@ -1,0 +1,17 @@
+DeclaracionNumeroNodo
+LeerSensorNodo
+DeclaracionNodo
+IdentificadorNodo
+MientrasNodo
+ComandoTiempoNodo
+SiNodo
+NumeroNodo
+CondicionNodo
+ComandoControlNodo
+DeclaracionSensorNodo
+ParaNodo
+ComandoActuadorNodo
+ExpresionAritmeticaNodo
+ExpresionNodo
+AsignacionNodo
+ComandoMovimientoNodo
