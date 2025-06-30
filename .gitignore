@@ -1,0 +1,117 @@
+# Archivos compilados de Java
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+
+# Archivos de log
+*.log
+
+# Archivos temporales del compilador
+*.tmp
+*.temp
+
+# Directorios de build
+target/
+build/
+out/
+bin/
+dist/
+
+# IDEs
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Eclipse
+.project
+.classpath
+.c9/
+*.pydevproject
+.metadata
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+
+# NetBeans
+/nbproject/private/
+/build/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Gradle
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+.gradletasknamecache
+
+# Sistema operativo
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+
+# Linux
+*~
+
+# Archivos específicos del compilador
+# Archivos de salida generados
+*.out
+*.exe
+*.o
+*.so
+*.dylib
+
+# Archivos de prueba generados
+test_output/
+output/
+generated/
+
+# Archivos de configuración local
+config.local
+*.properties.local
+
+# Respaldos
+*.backup
+*.orig
+
+# Logs específicos del compilador
+compiler.log
+lexer.log
+parser.log
+semantic.log
