@@ -5,6 +5,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 class Analizador {
+    static boolean  finGloblales = false;
 
     public static class Token {
 
@@ -68,6 +69,7 @@ class Analizador {
      */
     public static List<Token> analizarLexico(String codigo) {
         // 
+        String lexema="";
         List<Token> tokens = new ArrayList<>();
         String[] lineas = codigo.split("\\R");
 
@@ -89,7 +91,7 @@ class Analizador {
                     Matcher matcher = regex.matcher(linea);
 
                     if (matcher.find()) {
-                        String lexema = matcher.group();
+                         lexema = matcher.group();
                         tokens.add(new Token(tipo, lexema, i + 1, columna));
                         columna += lexema.length();
                         linea = linea.substring(lexema.length());
@@ -110,6 +112,7 @@ class Analizador {
         }
 
         //Construir tabla de símbolos después de tokenizar
+        
         construirTablaSimbolos(tokens);
 
         return tokens;
@@ -128,7 +131,12 @@ class Analizador {
 
         for (int i = 0; i < tokens.size(); i++) {
             Token token = tokens.get(i);
-
+            System.out.println(token.lexema);
+            if(token.lexema.equals("iniciar_metodo")){
+                finGloblales = true;
+            }else{
+            if(finGloblales ==false){
+              
             // Detectar patrón de declaración: IDENTIFICADOR "tipo" TIPO "=" valor
             if (esPatronDeclaracion(tokens, i)) {
                 String nombreVariable = token.lexema;
@@ -142,10 +150,21 @@ class Analizador {
                     if (!existeVariableEnTabla(nombreVariable)) {
                         EntradaTablaSimbolos nuevaEntrada = new EntradaTablaSimbolos(
                                 nombreVariable, tipoVariable, lineaDeclaracion, columnaDeclaracion);
-                        tablaSimbolosCompleta.add(nuevaEntrada);
+                       tablaSimbolosCompleta.add(nuevaEntrada);
+                        
+                        
+                        /// aqui se puede agregar el
+                         
                     }
                 }
+            }}
+            
             }
+            
+            
+            
+            
+          
         }
     }
     

@@ -23,7 +23,7 @@ public class AnalizadorSintactico {
     //esto creará una lista temporal de las variables declaradas, para usar la tabla de simbolos del analizador léxico
         private Set<String> variablesDeclaradasEnParsing;
         private Set<DeclaracionMetodoNodo> metodos;//para checar que los identificadores de métodos no se repitan
-
+     
     public Set<DeclaracionMetodoNodo> getMetodos() {
         return metodos;
     }

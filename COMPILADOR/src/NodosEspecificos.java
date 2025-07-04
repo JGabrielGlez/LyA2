@@ -25,10 +25,9 @@ abstract class DeclaracionNodo  extends NodoAST{
  * Para: <declaracion_metodo> ::= "iniciar_metodo" <identificador> "("  <parametros>  ")"<declaraciones> <instrucciones>  "fin_metodo"
  */
 class DeclaracionMetodoNodo extends DeclaracionNodo{
-    private Set<ParametroNodo> parametros; //Valeria
+    private Set<ParametroNodo> parametros; 
     private List<DeclaracionNodo> declaraciones;
     private List<NodoAST> instrucciones;
-
     public DeclaracionMetodoNodo(String identificador, int linea, int columna) {
         super(identificador, linea, columna);
         this.parametros = new HashSet<>();
@@ -46,7 +45,8 @@ class DeclaracionMetodoNodo extends DeclaracionNodo{
     
     public void agregarInstruccion(NodoAST instruccion) { instrucciones.add(instruccion); }
     public void agregarDeclaracion(DeclaracionNodo declaracion) { declaraciones.add(declaracion); }
-    
+   
+
     /**
      * 
      * @param parametro
