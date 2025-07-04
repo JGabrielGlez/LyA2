@@ -1,10 +1,13 @@
 iniciar
-    sensor_distancia tipo Sensor = 2
-    sensor_temperatura tipo Sensor = 3
-    distancia tipo numero = 0
+    sensor_distancia tipo Sensor = 255
+
+
+    distancia tipo numero = 3+3
      temperatura tipo numero = 0
 
-    encender_led rojo
+
+
+    encender_led azul
     
   
     mover_adelante 5

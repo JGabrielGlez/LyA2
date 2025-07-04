@@ -8,9 +8,9 @@
                
 ========================================================
 
-                |Declaracion_metodo
+                |declaracion_metodo
 
-<Declaracion_metodo> :: = "iniciar_metodo" <identificador> "("  <parametros>  ")"<declaraciones> <instrucciones>  "fin_metodo"
+<declaracion_metodo> :: = "iniciar_metodo" <identificador> "("  <parametros>  ")"<declaraciones> <instrucciones>  "fin_metodo"
 
 <parametrounico> :: = <identificador> ("tipo numero"| "tipo Sensor")
 
@@ -34,6 +34,9 @@
                | <estructura_control> 
                | <asignacion> 
                | <comando_control>
+               | <usar_metodo>
+
+<usar_metodo>::= <identificador> "(" (parametros | ε) ")"
 
 <comando_movimiento> ::= ("mover_adelante" | "mover_atras" | "girar_izquierda" | "girar_derecha") <expresion>
 

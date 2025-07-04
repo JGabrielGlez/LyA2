@@ -28,8 +28,11 @@ class Analizador {
 
     // PATRONES DE TOKENIZACIÓN
     private static final String[][] patrones = {
+                                                                    
         {"PALABRA_CLAVE", "\\b(fin si|fin para|fin mientras|fin caso)\\b"},
-        {"PALABRA_CLAVE", "\\b(iniciar|Terminar|si|entonces|detener|para|mientras|caso|hacer|hasta|cuando|romper|fin|tipo)\\b"},
+        
+                                                                                                                    //se agregaron los metodos
+        {"PALABRA_CLAVE", "\\b(iniciar|Terminar|si|entonces|detener|para|mientras|caso|hacer|hasta|cuando|romper|fin|tipo|iniciar_metodo|fin_metodo)\\b"},
         {"COMANDO_MOVIMIENTO", "\\b(mover_adelante|mover_atras|girar_izquierda|girar_derecha)\\b"},
         {"COMANDO_ACTUADOR", "\\b(encender_led|apagar_led)\\b"},
         {"COMANDO_SENSOR", "\\b(leer_sensor)\\b"},
@@ -43,7 +46,8 @@ class Analizador {
         {"TIPOS_DATOS", "\\b(numero|Sensor)\\b"},
         {"PARENTESIS", "(\\(|\\))"},
         {"IDENTIFICADOR", "\\b[a-zA-Z_][a-zA-Z_0-9]*\\b"},
-        {"COMENTARIO", "(//.*|#.*)"}
+        {"COMENTARIO", "(//.*|#.*)"},
+        {"SEPARADOR",","}/////se agregó el separador
     };
 
     
@@ -182,6 +186,9 @@ class Analizador {
      * Verifica si la posición actual forma un patrón de declaración válido
      */
     private static boolean esPatronDeclaracion(List<Token> tokens, int posicion) {
+        
+       
+        
         if (posicion + 4 >= tokens.size()) {
             return false;
         }
@@ -191,6 +198,13 @@ class Analizador {
                 && tokens.get(posicion + 1).lexema.equals("tipo")
                 && tokens.get(posicion + 3).lexema.equals("=");
     }
+    
+    
+    public boolean esDeMetodo(){
+        
+        return false;
+    }
+    
 
     /**
      * Verifica si es un tipo de datos válido

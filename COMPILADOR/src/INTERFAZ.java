@@ -31,6 +31,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.swing.SwingUtilities;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 public class INTERFAZ extends javax.swing.JFrame {
 
@@ -45,7 +48,39 @@ public class INTERFAZ extends javax.swing.JFrame {
         initComponents();
         configurarUndoRedo();
         jScrollPane4.setRowHeaderView(new TextLineNumber(JTAEditotText));
+        
+        JTAEditotText.getDocument().addDocumentListener(new DocumentListener() {
+    @Override
+    public void insertUpdate(DocumentEvent e) {
+        SwingUtilities.invokeLater(() -> {
+            String texto = JTAEditotText.getText();
+            
+            // Buscar la posición de "Terminar"
+            int posicionTerminar = texto.lastIndexOf("Terminar");
+            
+            if (posicionTerminar != -1) {
+                // Calcular donde termina la palabra "Terminar"
+                int finTerminar = posicionTerminar + "Terminar".length();
+                
+                // Si hay texto después de "Terminar", eliminarlo
+                if (texto.length() > finTerminar) {
+                    JTAEditotText.setText(texto.substring(0, finTerminar));
+                }
+            }
+        });
     }
+    
+    @Override
+    public void removeUpdate(DocumentEvent e) {}
+    
+    @Override
+    public void changedUpdate(DocumentEvent e) {}
+});
+    }
+    
+    
+    
+    
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents

@@ -3,18 +3,22 @@ import java.util.List;
 
 public class ProgramaNodo extends NodoAST {
     public List<NodoAST> declaraciones;
+    public List<NodoAST> metodos;
     public List<NodoAST> instrucciones;
     
     public ProgramaNodo() {
         super(); // Llama al constructor base
         this.declaraciones = new ArrayList<>();
         this.instrucciones = new ArrayList<>();
+        this.metodos = new ArrayList<>();
     }
     
     public ProgramaNodo(int linea, int columna) {
         super(linea, columna); // Constructor con posición
         this.declaraciones = new ArrayList<>();
         this.instrucciones = new ArrayList<>();
+        this.metodos = new ArrayList<>();
+
     }
     
     @Override
@@ -171,4 +175,8 @@ public class ProgramaNodo extends NodoAST {
     public void agregarInstruccion(NodoAST instruccion) {
         instrucciones.add(instruccion);
     }
+    public void agregarMetodo(NodoAST metodo) {
+        instrucciones.add(metodo);
+    }
+    
 }

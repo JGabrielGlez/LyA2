@@ -1,11 +1,13 @@
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Nodo base para declaraciones
  * Según gramática: <declaracion> ::= <declaracion_numero> | <declaracion_sensor>
  */
-abstract class DeclaracionNodo extends NodoAST {
+abstract class DeclaracionNodo  extends NodoAST{
     protected String identificador;
     
     public DeclaracionNodo(String identificador, int linea, int columna) {
@@ -15,6 +17,135 @@ abstract class DeclaracionNodo extends NodoAST {
     
     public String getIdentificador() { return identificador; }
 }
+
+
+//============================================== clase del 30 de junio
+//agregar los metodos al lenguaje
+/**
+ * Para: <declaracion_metodo> ::= "iniciar_metodo" <identificador> "("  <parametros>  ")"<declaraciones> <instrucciones>  "fin_metodo"
+ */
+class DeclaracionMetodoNodo extends DeclaracionNodo{
+    private Set<ParametroNodo> parametros; //Valeria
+    private List<DeclaracionNodo> declaraciones;
+    private List<NodoAST> instrucciones;
+
+    public DeclaracionMetodoNodo(String identificador, int linea, int columna) {
+        super(identificador, linea, columna);
+        this.parametros = new HashSet<>();
+        this.instrucciones = new ArrayList<>();
+        this.declaraciones = new ArrayList<>();
+    }
+    
+    public void agregarInstruccion(NodoAST instruccion) { instrucciones.add(instruccion); }
+    public void agregarDeclaracion(DeclaracionNodo declaracion) { declaraciones.add(declaracion); }
+    
+    /**
+     * 
+     * @param parametro
+     * @return falso cuando no se puede agregar el parámetro debido a que su identificador ya fue usado
+     * 
+     */
+    public boolean agregarParametro(ParametroNodo parametro) { 
+       
+        for (ParametroNodo p : parametros) {
+        if (p.getIdentificador().equals(parametro.getIdentificador())) {
+            return false; // Ya existe
+        }
+    }
+    // Si no existe, agregar el objeto completo
+    parametros.add(parametro);
+    return true;
+    }
+
+
+
+    @Override
+    public String toString() {
+return "";        
+//throw new UnsupportedOperationException("Not supported yet."); 
+    }
+
+    public Set<ParametroNodo> getParametros() {
+        return parametros;
+    }
+
+    public void setParametros(Set<ParametroNodo> parametros) {
+        this.parametros = parametros;
+    }
+
+    
+
+    
+    
+
+    public List<DeclaracionNodo> getDeclaraciones() {
+        return declaraciones;
+    }
+
+    public void setDeclaraciones(List<DeclaracionNodo> declaraciones) {
+        this.declaraciones = declaraciones;
+    }
+
+    public List<NodoAST> getInstrucciones() {
+        return instrucciones;
+    }
+
+    public void setInstrucciones(List<NodoAST> instrucciones) {
+        this.instrucciones = instrucciones;
+ }
+}
+/**
+ * Para: <parametrounico> :: = <identificador> ("tipo numero"| "tipo Sensor")
+ */
+
+class ParametroNodo extends NodoAST{
+    private String identificador, tipo;
+
+    public ParametroNodo(String identificador, String tipo) {
+        this.identificador = identificador;
+        this.tipo = tipo;
+    }
+
+    public ParametroNodo(String identificador, String tipo, int linea, int columna) {
+        super(linea, columna);
+        this.identificador = identificador;
+        this.tipo = tipo;
+    }
+
+    public String getIdentificador() {
+        return identificador;
+    }
+
+    public void setIdentificador(String identificador) {
+        this.identificador = identificador;
+    }
+
+    public String getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
+    }
+
+    @Override
+    public String toString() {
+return "";        
+    }
+    
+    
+    
+}
+//es un nodo Declaracion, que se manejará con el método de parseo correspondiente. 
+
+
+/**
+ * Para: <parametros> :: = <parametrounico> (ε |"," <parametros>  )
+ */
+
+//==============================================
+
+
 
 /**
  * Para: <declaracion_numero> ::= <identificador> "tipo" "numero" "=" <expresion>

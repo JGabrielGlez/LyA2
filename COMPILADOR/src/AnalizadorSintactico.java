@@ -22,6 +22,8 @@ public class AnalizadorSintactico {
     
     //esto creará una lista temporal de las variables declaradas, para usar la tabla de simbolos del analizador léxico
         private Set<String> variablesDeclaradasEnParsing;
+        private Set<String> metodos;//para checar que los identificadores de métodos no se repitan
+
     
     
     //Esto verifica que una variable sí esté declarada en el programa antes de su uso dentro de cualquier parte del programa
@@ -45,6 +47,11 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
     variablesDeclaradasEnParsing.add(nombreVariable);
 }
 
+
+
+
+
+
     public AnalizadorSintactico() {
         this.posicion = 0;
         this.errores = new StringBuilder();
@@ -67,6 +74,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
     
     //al iniciar el parsea, se declarará este HashSet donde se pondrán las variables que ya han sido delcaradas. 
         this.variablesDeclaradasEnParsing = new HashSet<>();
+        metodos = new HashSet<>();
     
     try {
         return parsearPrograma();
@@ -102,6 +110,36 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
      */
     private boolean hayTokens() {
         return posicion < tokens.size();
+    }
+    
+     ///////////////////////////////////con 0/////////////////////////////////
+
+    private void validarDivisionesPorCero(ExpresionNodo expresion) throws ParseException {
+        if (expresion instanceof ExpresionAritmeticaNodo) {
+            ExpresionAritmeticaNodo exp = (ExpresionAritmeticaNodo) expresion;
+
+            //revisar operando derecho
+            for (int i = 0; i < exp.getOperadores().size(); i++) {
+                if (exp.getOperadores().get(i).equals("/")) {
+                    ExpresionNodo operandoDerecho = exp.getOperandos().get(i + 1);
+                    if (esCero(operandoDerecho)) {
+                        throw new ParseException("Division entre cero detectada en linea " + expresion.getLinea());
+                    }
+                }
+            }
+
+            for (ExpresionNodo operando : exp.getOperandos()) {
+                validarDivisionesPorCero(operando);
+            }
+        }
+    }
+
+
+    private boolean esCero(ExpresionNodo nodo) {
+        if (nodo instanceof NumeroNodo) {
+            return ((NumeroNodo) nodo).getValor() == 0;
+        }
+        return false;
     }
     
     
@@ -204,6 +242,8 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         
         saltarComentarios();
         
+        parsearDeclaracionesMetodos(programa);
+        
         // Parsear instrucciones
         parsearInstrucciones(programa);
         
@@ -234,6 +274,143 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         }
     }
     
+    
+    //==========================método para parsear declaracionmetodo en un ciclo, hasta acabar
+    
+     /**
+     * para:     <identificador> "("  <parametros>  ")"<declaraciones> <instrucciones>
+     */
+    private DeclaracionMetodoNodo parsearMetodo() throws ParseException{
+       //esta ubicado en un id
+        Analizador.Token token = tokenActual();
+       DeclaracionMetodoNodo metodos = new DeclaracionMetodoNodo(token.lexema, posicion, posicion);
+        consumirTipo("IDENTIFICADOR");
+        consumir("(");
+        
+        token =tokenActual();
+        
+        //para metodos sin parametros FUNCIONA
+        if (token.lexema.equals(")")) {
+            consumir(")");
+            parsearDeclaraciones(metodos);
+            
+            parsearInstrucciones(metodos);
+                       consumir("fin_metodo");
+
+            return metodos;
+           
+        }
+        
+
+        //id tipo numero|Sensor, uno o mas parametros
+
+        while(hayTokens() && verificarTipo("IDENTIFICADOR")){
+            //significa que hay un id y falta "tipo nummero|Sensor"
+            
+            
+            ParametroNodo parametro = parsearParametroNodo();
+                if(!metodos.agregarParametro(parametro))
+                    throw new ParseException("Error en línea: "+parametro.linea+
+                ". El parámetro con identificador: "+parametro.getIdentificador()+" ya fue declarado.");
+                
+                saltarComentarios();
+                
+                //checar si hay coma
+                if (tokenActual().lexema.equals(",")) {
+                    //se vuelve a parseat el parametro
+                    consumir(",");
+                    if (!verificarTipo("IDENTIFICADOR")) {
+                       throw new ParseException("Se esperaba identificador después de ',' en línea " + tokenActual().linea);
+        }
+            }
+        //una vez agregado todo como sus parametros, declaraciones e instrucciones, devuelve el nodo con esas tres listas completas
+        }    
+        consumir(")");
+            
+            //se deben de parsear las declaraciones nuevas y las instrucciones;
+            parsearDeclaraciones(metodos);
+            
+            parsearInstrucciones(metodos);
+           consumir("fin_metodo");
+         return metodos;
+    }
+    
+    /**
+     * 
+     *<usar_metodo>::= <identificador> "(" (parametros | ε) ")"
+     * @
+     */
+    
+    private ParametroNodo parsearParametroNodo()throws ParseException {
+        //estoy en un token identificador
+        //la estructura es id tipo numero|Sensor;
+        Analizador.Token parametro= tokenActual();
+        String identificador = parametro.lexema;
+        consumirTipo("IDENTIFICADOR");
+        consumir("tipo");
+        Analizador.Token token = tokenActual();//obtengo el token actual para compararlo con lo que espero
+        System.out.println(token.lexema);
+        
+        if(token.lexema.equals("numero"))consumir ("numero");
+        else if(token.lexema.equals("Sensor"))consumir ("Sensor");
+        else throw new ParseException("Se esperaba 'numero' o 'Sensor' en la línea: "+token.linea);
+
+        return new ParametroNodo(identificador, token.tipo, parametro.linea, parametro.columna);
+    }
+    
+    //sobreescribir el método de parsear declaraciones para que acepte como parámetro un DeclaracionMetodoNodo
+    private void parsearDeclaraciones(DeclaracionMetodoNodo metodos) throws ParseException {
+        saltarComentarios();
+        
+        // Mientras haya declaraciones (identificador seguido de "tipo")
+        while (hayTokens() && verificarTipo("IDENTIFICADOR")) {
+            // Mirar hacia adelante para ver si es declaración
+            if (posicion + 1 < tokens.size() && tokens.get(posicion + 1).lexema.equals("tipo")) {
+                DeclaracionNodo declaracion = parsearDeclaracion();
+                metodos.agregarDeclaracion(declaracion);
+                saltarComentarios();
+            } else {
+                break; // No es declaración, salir del bucle
+            }
+        }
+    }
+    
+    
+    private void parsearDeclaracionesMetodos(ProgramaNodo programa) throws ParseException{
+         saltarComentarios();
+            while (hayTokens() && verificar("iniciar_metodo")) {
+            if (posicion + 1 < tokens.size() && tokens.get(posicion + 1).tipo.equals("IDENTIFICADOR")) {
+                consumir("iniciar_metodo");
+               // Analizador.Token token = tokenActual();
+
+                //Aquí se debería checar si el identificador de este método ya está en uso o no
+                //===========================================
+                
+                //se debe de buscar el nombre del método dentro del hashset de metodos
+                if(metodos.contains(tokenActual().lexema)){
+                    throw new ParseException("Error en línea: "+tokenActual().linea+". Este método ya fue declarado previamente, ponerle otro nombre ");
+                }
+                
+                metodos.add(tokenActual().lexema);
+                
+                
+                //===========================================
+                DeclaracionMetodoNodo metodo =parsearMetodo();
+                programa.agregarMetodo(metodo);
+
+                saltarComentarios();//esto es para checar si no estamos ante una palabra de cierre
+
+
+
+            }else{
+                throw new ParseException("Sintaxis de métodos: 'iniciar_metodo' <identificador>'('<parametros>')'<declaraciones><instrucciones>");
+            }
+        }
+
+    }
+    
+    
+    
     /**
      * <declaracion> ::= <declaracion_numero> | <declaracion_sensor>
      */
@@ -255,6 +432,12 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
     }
     
     /**
+     * <declaracion_metodo> ::= "iniciar_metodo" <identificador> "("  <parametros>  ")"<declaraciones> <instrucciones>  "fin_metodo"
+     */
+    
+    
+    
+    /**
      * <declaracion_numero> ::= <identificador> "tipo" "numero" "=" <expresion>
      */
     private DeclaracionNumeroNodo parsearDeclaracionNumero(Analizador.Token identificador) throws ParseException {
@@ -264,11 +447,14 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         consumir("numero");
         consumir("=");
         
+        String numero = tokenActual().toString();
+       // System.out.println(numero.);
         ExpresionNodo valorInicial = parsearExpresion();
+        validarDivisionesPorCero(valorInicial);
         
         //no se debería poder darle el valor de un sensor
             validarExpresionNoContieneSensores(valorInicial);
-        
+            
         return new DeclaracionNumeroNodo(identificador.lexema, valorInicial, 
                                        identificador.linea, identificador.columna);
     }
@@ -292,7 +478,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         
         
         int puerto = (int) Double.parseDouble(numero.lexema);
-        
+        if(puerto>255) throw new ParseException("Valor asignado supera los límites físicos (0-255), en línea: "+numero.linea);
         return new DeclaracionSensorNodo(identificador.lexema, puerto, 
                                        identificador.linea, identificador.columna);
     }
@@ -313,6 +499,20 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
             NodoAST instruccion = parsearInstruccion();
             if (instruccion != null) {
                 programa.agregarInstruccion(instruccion);
+            }
+            saltarComentarios();
+        }
+    }
+    //sobreescritura de este método para agregar las isntrucciones al nodo DeclaracionMetodoNodo
+    private void parsearInstrucciones(DeclaracionMetodoNodo metodos) throws ParseException {
+        saltarComentarios();
+        //quite hayTokens() &&
+        while ( !verificar("fin_metodo")) {
+            // Verificar si no estamos en una palabra de cierre
+
+            NodoAST instruccion = parsearInstruccion();
+            if (instruccion != null) {
+                metodos.agregarInstruccion(instruccion);
             }
             saltarComentarios();
         }
@@ -393,6 +593,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
             expresion.agregarOperador(operador.lexema);
             expresion.agregarOperando(siguienteTermino);
         }
+        
         
         return expresion;
     }
@@ -580,6 +781,8 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         posicion++; // Consumir operador
         
         ExpresionNodo derecha = parsearExpresion();
+        validarDivisionesPorCero(izquierda);
+        validarDivisionesPorCero(derecha);
         
         return new CondicionNodo(izquierda, operador.lexema, derecha, 
                                operador.linea, operador.columna);
@@ -597,6 +800,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         posicion++; // Consumir comando
         
         ExpresionNodo parametro = parsearExpresion();
+        validarDivisionesPorCero(parametro);
         
         //no se pueden usar variables de tipo sensor, a menos que se le haga una asignacion previa
             validarExpresionNoContieneSensores(parametro);
@@ -636,6 +840,8 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         
         //no se pueden usar variables de tipo Sensor directamente
         validarExpresionNoContieneSensores(duracion);
+        validarDivisionesPorCero(duracion);
+        
         
         
         Analizador.Token unidad = consumirTipo("UNIDAD_TIEMPO");
@@ -661,6 +867,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         //////////////////
         consumir("=");
         ExpresionNodo valor = parsearExpresion();
+        validarDivisionesPorCero(valor);
         
         //el tipo de variable debe ser compatible con la asignacion
             validarAsignacionTipoCompatible(variable.lexema, valor, variable.linea);
