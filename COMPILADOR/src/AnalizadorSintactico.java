@@ -338,8 +338,15 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
     /**
      * 
      *<usar_metodo>::= <identificador> "(" (parametros | ε) ")"
-     * @
+     * 
      */
+    private MetodoNodo()throws ParseException{
+        //al detectar un identificador seguido de un paréntesis incia este parseo
+        String nombreMetodo = consumir(tokenActual().lexema).lexema;
+        System.out.println("Identificador: " + nombreMetodo);
+        
+        
+    }
     
     private ParametroNodo parsearParametroNodo()throws ParseException {
         //estoy en un token identificador

@@ -95,6 +95,73 @@ return "";
  }
 }
 /**
+ * <usar_metodo>::= <identificador> "(" (parametros | ε) ")"
+ */
+class MetodoNodo extends NodoAST{
+    private String identificador;
+    private Set<ParametroNodo> parametros; //Valeria
+
+    public MetodoNodo(String identificador, Set<ParametroNodo> parametros) {
+        this.identificador = identificador;
+        this.parametros = parametros;
+    }
+
+    public MetodoNodo(String identificador, Set<ParametroNodo> parametros, int linea, int columna) {
+        super(linea, columna);
+        this.identificador = identificador;
+        this.parametros = parametros;
+    }
+    
+    public MetodoNodo(String identificador,  int linea, int columna) {
+        super(linea, columna);
+        this.identificador = identificador;
+        this.parametros = new HashSet<>();
+    }
+
+    public String getIdentificador() {
+        return identificador;
+    }
+
+    public void setIdentificador(String identificador) {
+        this.identificador = identificador;
+    }
+
+    public Set<ParametroNodo> getParametros() {
+        return parametros;
+    }
+
+    public void setParametros(Set<ParametroNodo> parametros) {
+        this.parametros = parametros;
+    }
+
+    public int getLinea() {
+        return linea;
+    }
+
+    public void setLinea(int linea) {
+        this.linea = linea;
+    }
+
+    public int getColumna() {
+        return columna;
+    }
+
+    public void setColumna(int columna) {
+        this.columna = columna;
+    }
+    
+    
+
+    @Override
+    public String toString() {
+        return "MetodoNodo{" + "identificador=" + identificador + ", parametros=" + parametros + '}';
+    }
+    
+    
+
+}
+
+/**
  * Para: <parametrounico> :: = <identificador> ("tipo numero"| "tipo Sensor")
  */
 
@@ -144,8 +211,6 @@ return "";
  */
 
 //==============================================
-
-
 
 /**
  * Para: <declaracion_numero> ::= <identificador> "tipo" "numero" "=" <expresion>
