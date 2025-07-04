@@ -1,4 +1,4 @@
-import java.util.ArrayList;
+import java.net.IDN;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
@@ -22,7 +22,20 @@ public class AnalizadorSintactico {
     
     //esto creará una lista temporal de las variables declaradas, para usar la tabla de simbolos del analizador léxico
         private Set<String> variablesDeclaradasEnParsing;
-        private Set<String> metodos;//para checar que los identificadores de métodos no se repitan
+        private Set<DeclaracionMetodoNodo> metodos;//para checar que los identificadores de métodos no se repitan
+
+    public Set<DeclaracionMetodoNodo> getMetodos() {
+        return metodos;
+    }
+
+    public void setMetodos(Set<DeclaracionMetodoNodo> metodos) {
+        this.metodos = metodos;
+    }
+    
+    public void agregarMetodo(DeclaracionMetodoNodo metodo){
+        metodos.add(metodo);
+        
+    }
 
     
     
@@ -340,12 +353,28 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
      *<usar_metodo>::= <identificador> "(" (parametros | ε) ")"
      * 
      */
-    private MetodoNodo()throws ParseException{
+    private MetodoNodo parsearMetodoNodo()throws ParseException{
+        
         //al detectar un identificador seguido de un paréntesis incia este parseo
-        String nombreMetodo = consumir(tokenActual().lexema).lexema;
+        Analizador.Token token = consumir(tokenActual().lexema);
+        String nombreMetodo = token.lexema;
         System.out.println("Identificador: " + nombreMetodo);
         
+        consumir("(");
+        //mirar hacia adelante para ver si es un método sin parámetros y compararlo con la cantidad de parámetros que tiene la lista del método
+        //buscar en la lista de métodos el que coincida con el id
+        //se encuentra en la parte de los nodos de declaración de métodos. 
         
+        //en este punto ya se tienen x metodos declarados y almacenados con sus respectivos nodos
+        //por lo que se deben de acceder a ellos para checar sus parámetros
+        if(metodos.isEmpty()){throw new ParseException("Método en línea: "+nombreMetodo);}
+        for (DeclaracionMetodoNodo n:metodos){
+            //encontrar el método que tenga ese nombre 
+        }
+        //ya se está dentro del paréntesis, por lo que se debe de checar la lista de parámetros
+        consumir(")");
+        //retorno provisional
+        return null;
     }
     
     private ParametroNodo parsearParametroNodo()throws ParseException {
@@ -392,18 +421,19 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
 
                 //Aquí se debería checar si el identificador de este método ya está en uso o no
                 //===========================================
-                
+                String identificador = tokenActual().lexema;
                 //se debe de buscar el nombre del método dentro del hashset de metodos
-                if(metodos.contains(tokenActual().lexema)){
-                    throw new ParseException("Error en línea: "+tokenActual().linea+". Este método ya fue declarado previamente, ponerle otro nombre ");
+                for(DeclaracionMetodoNodo n : metodos){
+                    if(n.getIdentificador().equals(identificador)) throw new ParseException("Error en línea: "+tokenActual().linea+". Este método ya fue declarado previamente, ponerle otro nombre ");
                 }
                 
-                metodos.add(tokenActual().lexema);
+                
                 
                 
                 //===========================================
                 DeclaracionMetodoNodo metodo =parsearMetodo();
                 programa.agregarMetodo(metodo);
+                metodos.add(metodo);
 
                 saltarComentarios();//esto es para checar si no estamos ante una palabra de cierre
 
@@ -568,6 +598,11 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         else if (verificarTipo("IDENTIFICADOR") && posicion + 1 < tokens.size() && 
                  tokens.get(posicion + 1).lexema.equals("=")) {
             return parsearAsignacion();
+        } 
+        // uso de método como instruccion
+        else if (verificarTipo("IDENTIFICADOR") && posicion + 1 < tokens.size() && 
+                 tokens.get(posicion + 1).lexema.equals("(")) {
+            return parsearMetodoNodo();
         }
         else {
             throw new ParseException("Instrucción no reconocida: '" + lexema + "' en línea " + token.linea);

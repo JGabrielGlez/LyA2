@@ -35,6 +35,14 @@ class DeclaracionMetodoNodo extends DeclaracionNodo{
         this.instrucciones = new ArrayList<>();
         this.declaraciones = new ArrayList<>();
     }
+
+    public String getIdentificador() {
+        return identificador;
+    }
+
+    public void setIdentificador(String identificador) {
+        this.identificador = identificador;
+    }
     
     public void agregarInstruccion(NodoAST instruccion) { instrucciones.add(instruccion); }
     public void agregarDeclaracion(DeclaracionNodo declaracion) { declaraciones.add(declaracion); }
