@@ -125,20 +125,19 @@ class Analizador {
      * Construye la tabla de símbolos analizando tokens para encontrar
      * declaraciones
      */
-    private static void construirTablaSimbolos(List<Token> tokens){
+    private static void construirTablaSimbolos(List<Token> tokens) {
         // Limpiar tabla completa
         tablaSimbolosCompleta.clear();
 
         for (int i = 0; i < tokens.size(); i++) {
             Token token = tokens.get(i);
             System.out.println(token.lexema);
-            if(token.lexema.equals("iniciar_metodo")){
+            if (token.lexema.equals("iniciar_metodo"))
                 finGloblales = true;
-            }else{
-            if(finGloblales ==false){
-              
+            
+            
             // Detectar patrón de declaración: IDENTIFICADOR "tipo" TIPO "=" valor
-            if (esPatronDeclaracion(tokens, i)) {
+            if (esPatronDeclaracion(tokens, i) && finGloblales == false) {
                 String nombreVariable = token.lexema;
                 String tipoVariable = tokens.get(i + 2).lexema;
                 int lineaDeclaracion = token.linea;
@@ -150,23 +149,22 @@ class Analizador {
                     if (!existeVariableEnTabla(nombreVariable)) {
                         EntradaTablaSimbolos nuevaEntrada = new EntradaTablaSimbolos(
                                 nombreVariable, tipoVariable, lineaDeclaracion, columnaDeclaracion);
-                       tablaSimbolosCompleta.add(nuevaEntrada);
-                        
-                        
+                        tablaSimbolosCompleta.add(nuevaEntrada);
+
                         /// aqui se puede agregar el
-                         
                     }
                 }
-            }}
-            
             }
+        }
+
+    }
             
             
             
             
           
-        }
-    }
+        
+    
     
      public static String obtenerPatronesPorLinea(List<Token> tokens) {
         StringBuilder resultado = new StringBuilder();
