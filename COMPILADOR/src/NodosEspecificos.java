@@ -23,8 +23,7 @@ abstract class DeclaracionNodo  extends NodoAST{
 //agregar los metodos al lenguaje
 /**
  * Para: <declaracion_metodo> ::= "iniciar_metodo" <identificador> "("  <parametros>  ")"<declaraciones> <instrucciones>  "fin_metodo"
- */
-class DeclaracionMetodoNodo extends DeclaracionNodo{
+ */class DeclaracionMetodoNodo extends DeclaracionNodo{
     private Set<ParametroNodo> parametros; 
     private List<DeclaracionNodo> declaraciones;
     private List<NodoAST> instrucciones;

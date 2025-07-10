@@ -14,6 +14,7 @@ public class AnalizadorSintactico {
     // Estado del parser
     private List<Analizador.Token> tokens;
     private int posicion;
+    private boolean finGlobales = false;
    
     private StringBuilder errores;
     
@@ -22,6 +23,7 @@ public class AnalizadorSintactico {
     
     //esto creará una lista temporal de las variables declaradas, para usar la tabla de simbolos del analizador léxico
         private Set<String> variablesDeclaradasEnParsing;
+
         private Set<DeclaracionMetodoNodo> metodos;//para checar que los identificadores de métodos no se repitan
      
     public Set<DeclaracionMetodoNodo> getMetodos() {
@@ -52,6 +54,14 @@ public class AnalizadorSintactico {
    //Para evitar duplicidad en las declaraciones, checando las variables temporales. 
 
 private void validarNoDuplicada(String nombreVariable, int linea) throws ParseException {
+    
+    //hacer lo mismo de fin globales, poner una variable que se llame así y que cuando encuentre un metodo, ya no agregue
+    
+    if(finGlobales)return;
+    
+    
+    //en caso de que fin globales sea falsa, agrega a la tabla de variables ya declaradas, porque 
+    //significa que aún no llega a la parte de los métodos
     if (variablesDeclaradasEnParsing.contains(nombreVariable)) {
         throw new ParseException("Variable '" + nombreVariable + 
                                "' ya fue declarada previamente en línea " + linea);
@@ -60,14 +70,23 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
     variablesDeclaradasEnParsing.add(nombreVariable);
 }
 
-
-
-
-
+//metodo para validar duplicidad, pasando la tabla de simbolos del propio método
+/**
+ * 
+ * @param nombreVariable es el nombre que se va a buscar
+ * @param linea ubicación del lexema
+ * @param tablaSimbolos es la   tabla de simbolos propia del método
+ */
+private void validarNoDuplicadaEnMetodo(String nombreVariable, int linea, Set<String> tablaSimbolos)throws ParseException{
+        if(tablaSimbolos.contains(nombreVariable))
+            throw  new ParseException("Error en línea: "+linea+" Variable ya fue declarada previamente"+ nombreVariable);
+        tablaSimbolos.add(nombreVariable);    
+}
 
     public AnalizadorSintactico() {
         this.posicion = 0;
         this.errores = new StringBuilder();
+        finGlobales = false;
     }
     
     
@@ -294,18 +313,30 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
      * para:     <identificador> "("  <parametros>  ")"<declaraciones> <instrucciones>
      */
     private DeclaracionMetodoNodo parsearMetodo() throws ParseException{
+       
+        //este metodo generar devuelve un nodo de declaracion de metodo que será agregado a la lista generar de métodos
+
        //esta ubicado en un id
         Analizador.Token token = tokenActual();
        DeclaracionMetodoNodo metodos = new DeclaracionMetodoNodo(token.lexema, posicion, posicion);
         consumirTipo("IDENTIFICADOR");
         consumir("(");
         
+        
+        //Aquí se empiezan a agregar los nombres de las variables para evitar duplicados
+        
+        //se deberá agregar un metodo de parseo de uso de variables, para saber que variable se va a usar
+        //si será la variable global o la variable local
+         Set<String> variablesDeclaradasEnMetodo = new HashSet<>();
+
         token =tokenActual();
         
         //para metodos sin parametros FUNCIONA
         if (token.lexema.equals(")")) {
             consumir(")");
-            parsearDeclaraciones(metodos);
+            
+            //en esta parte se construye el nodo de declaración
+            parsearDeclaraciones(metodos, variablesDeclaradasEnMetodo);
             
             parsearInstrucciones(metodos);
                        consumir("fin_metodo");
@@ -341,7 +372,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         consumir(")");
             
             //se deben de parsear las declaraciones nuevas y las instrucciones;
-            parsearDeclaraciones(metodos);
+            parsearDeclaraciones(metodos,variablesDeclaradasEnMetodo);
             
             parsearInstrucciones(metodos);
            consumir("fin_metodo");
@@ -395,16 +426,23 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
     }
     
     //sobreescribir el método de parsear declaraciones para que acepte como parámetro un DeclaracionMetodoNodo
-    private void parsearDeclaraciones(DeclaracionMetodoNodo metodos) throws ParseException {
+    private void parsearDeclaraciones(DeclaracionMetodoNodo metodos, Set<String> variables) throws ParseException {
         saltarComentarios();
         
         // Mientras haya declaraciones (identificador seguido de "tipo")
         while (hayTokens() && verificarTipo("IDENTIFICADOR")) {
             // Mirar hacia adelante para ver si es declaración
             if (posicion + 1 < tokens.size() && tokens.get(posicion + 1).lexema.equals("tipo")) {
+                
+                //aqui debo de capturar el token, que será el identificador de la variable
+                String token = tokenActual().lexema;
+                
+                
+                
                 DeclaracionNodo declaracion = parsearDeclaracion();
                 metodos.agregarDeclaracion(declaracion);
                 saltarComentarios();
+                validarNoDuplicadaEnMetodo(token, tokenActual().linea, variables);
             } else {
                 break; // No es declaración, salir del bucle
             }
@@ -414,6 +452,11 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
     
     private void parsearDeclaracionesMetodos(ProgramaNodo programa) throws ParseException{
          saltarComentarios();
+         
+         //una vez entra a un metodo de parseo de declaraciones, ya no agrega a la lista de variables
+         //por lo que cualquier variable declarada dentro de un metodo, que tenga el mismo nombre que alguna 
+         //de la tabla de simbolos original, no lo captará como error
+         finGlobales = true;
             while (hayTokens() && verificar("iniciar_metodo")) {
             if (posicion + 1 < tokens.size() && tokens.get(posicion + 1).tipo.equals("IDENTIFICADOR")) {
                 consumir("iniciar_metodo");

@@ -132,6 +132,8 @@ class Analizador {
         for (int i = 0; i < tokens.size(); i++) {
             Token token = tokens.get(i);
             System.out.println(token.lexema);
+            
+            //esto detiene el agregar a la tabla de simbolos
             if (token.lexema.equals("iniciar_metodo"))
                 finGloblales = true;
             
@@ -151,7 +153,7 @@ class Analizador {
                                 nombreVariable, tipoVariable, lineaDeclaracion, columnaDeclaracion);
                         tablaSimbolosCompleta.add(nuevaEntrada);
 
-                        /// aqui se puede agregar el
+                        
                     }
                 }
             }
