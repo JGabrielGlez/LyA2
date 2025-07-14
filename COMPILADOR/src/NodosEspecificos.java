@@ -25,7 +25,7 @@ abstract class DeclaracionNodo  extends NodoAST{
  * Para: <declaracion_metodo> ::= "iniciar_metodo" <identificador> "("  <parametros>  ")"<declaraciones> <instrucciones>  "fin_metodo"
  */
 class DeclaracionMetodoNodo extends DeclaracionNodo{
-    private Set<ParametroNodo> parametros; //Valeria
+    private Set<String> parametros;
     private List<DeclaracionNodo> declaraciones;
     private List<NodoAST> instrucciones;
 
@@ -47,14 +47,12 @@ class DeclaracionMetodoNodo extends DeclaracionNodo{
      */
     public boolean agregarParametro(ParametroNodo parametro) { 
        
-        for (ParametroNodo p : parametros) {
-        if (p.getIdentificador().equals(parametro.getIdentificador())) {
-            return false; // Ya existe
+        if(parametros.contains(parametro.getIdentificador())){
+            return false;}
+        else{
+            parametros.add(parametro.getIdentificador());
+            return true;
         }
-    }
-    // Si no existe, agregar el objeto completo
-    parametros.add(parametro);
-    return true;
     }
 
 
@@ -65,15 +63,13 @@ return "";
 //throw new UnsupportedOperationException("Not supported yet."); 
     }
 
-    public Set<ParametroNodo> getParametros() {
+    public Set<String> getParametros() {
         return parametros;
     }
 
-    public void setParametros(Set<ParametroNodo> parametros) {
+    public void setParametros(Set<String> parametros) {
         this.parametros = parametros;
     }
-
-    
 
     
     
@@ -92,7 +88,31 @@ return "";
 
     public void setInstrucciones(List<NodoAST> instrucciones) {
         this.instrucciones = instrucciones;
- }
+    }   
+
+    @Override
+    public String generarCodigoIntermedio(GeneradorCodigoIntermedio generador) {
+            // Emitir una etiqueta para marcar el inicio del método
+    generador.agregarEtiqueta("METODO_" + identificador);
+    
+    if (generador == null) {
+        throw new IllegalStateException("Generador de código intermedio no inicializado");
+    }
+
+
+    for (DeclaracionNodo decl : declaraciones) {
+        decl.generarCodigoIntermedio(generador);
+    }
+
+    // Generar código para las instrucciones del método
+    for (NodoAST instr : instrucciones) {
+        instr.generarCodigoIntermedio(generador);
+    }
+
+    // Emitir una instrucción de retorno al final del método (si aplica)
+    generador.emitir("RETORNO");
+    return null;
+    }
 }
 /**
  * Para: <parametrounico> :: = <identificador> ("tipo numero"| "tipo Sensor")
@@ -131,6 +151,11 @@ class ParametroNodo extends NodoAST{
     @Override
     public String toString() {
 return "";        
+    }
+
+    @Override
+    public String generarCodigoIntermedio(GeneradorCodigoIntermedio generador) {
+        return null;
     }
     
     
@@ -171,7 +196,19 @@ class DeclaracionNumeroNodo extends DeclaracionNodo {
         return hijos;
     }
     
+    
     public ExpresionNodo getValorInicial() { return valorInicial; }
+
+    @Override
+    public String generarCodigoIntermedio(GeneradorCodigoIntermedio generador) {
+         if (valorInicial != null) {
+            String tempValor = valorInicial.generarCodigoIntermedio(generador);
+            generador.emitir("DECL_NUMERO", identificador, tempValor, null);
+        }
+        // Las declaraciones en sí mismas a menudo no producen un cuádruplo aparte de la asignación inicial
+        return null; 
+    
+    }
 }
 
 /**
@@ -193,6 +230,13 @@ class DeclaracionSensorNodo extends DeclaracionNodo {
     }
     
     public int getPuerto() { return puerto; }
+
+    @Override
+    public String generarCodigoIntermedio(GeneradorCodigoIntermedio generador) {
+        generador.emitir("DECL_SENSOR", identificador, String.valueOf(puerto), null);
+        
+        return null;
+    }
 }
 
 
@@ -300,6 +344,63 @@ class ExpresionAritmeticaNodo extends ExpresionNodo {
     public List<ExpresionNodo> getOperandos() { return operandos; }
     public List<String> getOperadores() { return operadores; }
     public int getNumeroTerminos() { return operandos.size(); }
+
+    @Override
+    public String generarCodigoIntermedio(GeneradorCodigoIntermedio generador) {
+        if (operandos.isEmpty()) {
+            return null; // O lanzar una excepción si la expresión es inválida
+        }
+
+        // --- FASE 1: Procesar Multiplicaciones y Divisiones ---
+        // Estas listas almacenarán los operandos y operadores después de la primera pasada
+        List<String> operandosFase2 = new ArrayList<>();
+        List<String> operadoresFase2 = new ArrayList<>();
+
+        // El primer operando siempre se procesa directamente
+        String resultadoParcial = operandos.get(0).generarCodigoIntermedio(generador);
+        
+        // Iterar sobre los operadores para encontrar '*' o '/'
+        for (int i = 0; i < operadores.size(); i++) {
+            String operadorActual = operadores.get(i);
+            String siguienteOperando = operandos.get(i + 1).generarCodigoIntermedio(generador);
+
+            if (operadorActual.equals("*") || operadorActual.equals("/")) {
+                // Si es multiplicación o división, generamos el cuádruplo inmediatamente
+                String nuevaTemporal = generador.nuevaTemporal();
+                generador.emitir(operadorActual, nuevaTemporal, resultadoParcial, siguienteOperando);
+                resultadoParcial = nuevaTemporal; // El resultado de esta operación se convierte en el nuevo 'resultadoParcial'
+            } else {
+                // Si es suma o resta, guardamos el resultado parcial actual, el operador, y el siguiente operando
+                // para la Fase 2.
+                operandosFase2.add(resultadoParcial); // Agrega el resultado acumulado hasta ahora
+                operadoresFase2.add(operadorActual); // Agrega el operador de baja precedencia
+                resultadoParcial = siguienteOperando; // El siguiente operando se convierte en el nuevo punto de partida para futuras ops de alta precedencia
+            }
+        }
+        // Después del bucle, el último 'resultadoParcial' (ya sea un literal o el resultado de la última * o /)
+        // debe agregarse a la lista de operandos para la Fase 2.
+        operandosFase2.add(resultadoParcial);
+
+
+        // --- FASE 2: Procesar Sumas y Restas ---
+        // Si no hay operadores de suma/resta, el resultado final ya está en operandosFase2.get(0)
+        if (operadoresFase2.isEmpty()) {
+            return operandosFase2.get(0);
+        }
+
+        // Si hay operadores de suma/resta, procesarlos de izquierda a derecha
+        String resultadoFinal = operandosFase2.get(0);
+        for (int i = 0; i < operadoresFase2.size(); i++) {
+            String operadorActual = operadoresFase2.get(i);
+            String siguienteOperando = operandosFase2.get(i + 1); // Tomar el operando de la lista filtrada
+
+            String nuevaTemporal = generador.nuevaTemporal();
+            generador.emitir(operadorActual, nuevaTemporal, resultadoFinal, siguienteOperando);
+            resultadoFinal = nuevaTemporal; // Encadenar el resultado
+        }
+
+        return resultadoFinal; // Este es el temporal que contiene el resultado final de toda la expresión
+    }
 }
 
 /**
@@ -328,6 +429,11 @@ class NumeroNodo extends ExpresionNodo {
     }
     
     public double getValor() { return valor; }
+
+    @Override
+    public String generarCodigoIntermedio(GeneradorCodigoIntermedio generador) {
+    return valor+""; 
+    }
 }
 
 /**
@@ -353,6 +459,11 @@ class IdentificadorNodo extends ExpresionNodo {
     }
     
     public String getNombre() { return nombre; }
+
+    @Override
+    public String generarCodigoIntermedio(GeneradorCodigoIntermedio generador) {
+            return nombre; // Retorna el nombre del identificador
+    }
 }
 
 /**
@@ -374,11 +485,18 @@ class LeerSensorNodo extends ExpresionNodo {
     
     @Override
     public double evaluar() throws Exception {
-        // En el futuro, esto leerá el sensor real
         throw new Exception("No se puede evaluar sensor '" + nombreSensor + "' sin hardware");
     }
     
     public String getNombreSensor() { return nombreSensor; }
+
+    @Override
+    public String generarCodigoIntermedio(GeneradorCodigoIntermedio generador) {
+        String resultadoTemp = generador.nuevaTemporal();
+    // Emite una instrucción TAC para leer el sensor y almacenar el valor en una temporal
+    generador.emitir("LEER_SENSOR", resultadoTemp, nombreSensor);
+    return resultadoTemp;
+    }
 }
 
 
@@ -415,6 +533,26 @@ class SiNodo extends NodoAST {
     public CondicionNodo getCondicion() { return condicion; }
     public List<NodoAST> getInstrucciones() { return instrucciones; }
     public void agregarInstruccion(NodoAST instruccion) { instrucciones.add(instruccion); }
+
+    @Override
+    public String generarCodigoIntermedio(GeneradorCodigoIntermedio generador) {
+            String etiquetaFinSi = generador.nuevaEtiqueta(); // Etiqueta para el final del bloque 'si'
+
+    String resultadoCondicion = condicion.generarCodigoIntermedio(generador);
+
+
+    generador.emitir("SINO", resultadoCondicion, etiquetaFinSi);
+
+    for (NodoAST instr : instrucciones) {
+        instr.generarCodigoIntermedio(generador);
+    }
+
+
+    generador.agregarEtiqueta(etiquetaFinSi);
+    return null; // Este nodo no produce un valor
+    }
+
+    
 }
 
 /**
@@ -454,6 +592,52 @@ class ParaNodo extends NodoAST {
     public ExpresionNodo getFin() { return fin; }
     public List<NodoAST> getInstrucciones() { return instrucciones; }
     public void agregarInstruccion(NodoAST instruccion) { instrucciones.add(instruccion); }
+    
+
+
+@Override
+public String generarCodigoIntermedio(GeneradorCodigoIntermedio generador) {
+    String etiquetaInicioBucle = generador.nuevaEtiqueta();
+    String etiquetaFinBucle = generador.nuevaEtiqueta();
+
+    // 1. Generar código para la expresión de inicio (valor_desde)
+    String valorDesdeTemp = inicio.generarCodigoIntermedio(generador);
+
+    // 2. Inicializar la variable del bucle
+    generador.emitir("ASIGNAR", variable, valorDesdeTemp); 
+
+    // 3. Agregar etiqueta de inicio del bucle
+    generador.agregarEtiqueta(etiquetaInicioBucle);
+
+    // 4. Generar código para la expresión de fin (valor_hasta)
+    String valorHastaTemp = fin.generarCodigoIntermedio(generador);
+
+    // 5. Evaluar la condición: variable <= valor_hasta
+    String condicionTemp = generador.nuevaTemporal();
+    generador.emitir("C_LE", condicionTemp, variable, valorHastaTemp); 
+
+    // 6. Saltar al fin del bucle si la condición es falsa
+    generador.emitir("JUMP_IF_FALSE", condicionTemp, etiquetaFinBucle);
+
+    // 7. Generar código para las instrucciones del cuerpo del bucle
+    for (NodoAST instr : instrucciones) {
+        instr.generarCodigoIntermedio(generador);
+    }
+
+    // 8. Incrementar la variable del bucle
+    String unoTemp = generador.nuevaTemporal();
+    generador.emitir("ASIGNAR", unoTemp, "1"); 
+    String nuevoValorContadorTemp = generador.nuevaTemporal();
+    generador.emitir("ADD", nuevoValorContadorTemp, variable, unoTemp); 
+    generador.emitir("ASIGNAR", variable, nuevoValorContadorTemp);
+
+    // 9. Saltar de vuelta al inicio del bucle
+    generador.emitir("JUMP", etiquetaInicioBucle);
+
+    // 10. Agregar la etiqueta de fin del bucle
+    generador.agregarEtiqueta(etiquetaFinBucle);
+    return null;
+}
 }
 
 /**
@@ -486,6 +670,32 @@ class MientrasNodo extends NodoAST {
     public CondicionNodo getCondicion() { return condicion; }
     public List<NodoAST> getInstrucciones() { return instrucciones; }
     public void agregarInstruccion(NodoAST instruccion) { instrucciones.add(instruccion); }
+
+    @Override
+    public String generarCodigoIntermedio(GeneradorCodigoIntermedio generador) {
+    String etiquetaInicioBucle = generador.nuevaEtiqueta();
+    String etiquetaFinBucle = generador.nuevaEtiqueta();
+
+    // 1. Agregar etiqueta de inicio del bucle
+    generador.agregarEtiqueta(etiquetaInicioBucle);
+
+    // 2. Generar código para la condición
+    String resultadoCondicion = condicion.generarCodigoIntermedio(generador);
+    // 3. Saltar a 'etiquetaFinBucle' si la condición es falsa
+    generador.emitir("JUMP_IF_FALSE", resultadoCondicion, etiquetaFinBucle);
+
+    // 4. Generar código para las instrucciones del bloque 'mientras'
+    for (NodoAST instr : instrucciones) {
+        instr.generarCodigoIntermedio(generador);
+    }
+
+    // 5. Saltar de vuelta al inicio del bucle para reevaluar la condición
+    generador.emitir("JUMP", etiquetaInicioBucle);
+
+    // 6. Agregar la etiqueta de fin del bucle
+    generador.agregarEtiqueta(etiquetaFinBucle);
+    return null;
+    }
 }
 
 /**
@@ -521,6 +731,27 @@ class CondicionNodo extends NodoAST {
     public ExpresionNodo getIzquierda() { return izquierda; }
     public String getOperador() { return operador; }
     public ExpresionNodo getDerecha() { return derecha; }
+
+    @Override
+    public String generarCodigoIntermedio(GeneradorCodigoIntermedio generador) {
+        String izqTemp = izquierda.generarCodigoIntermedio(generador);
+    String derTemp = derecha.generarCodigoIntermedio(generador);
+    String resultadoTemp = generador.nuevaTemporal();
+
+    
+    String opTAC;
+    switch (operador) {
+        case "==": opTAC = "IGUALQUE"; break;
+        case "!=": opTAC = "DESIGUALQUE"; break;
+        case "<":  opTAC = "MENORQUE"; break;
+        case ">":  opTAC = "MAYORQUE"; break;
+        case "<=": opTAC = "MENORIG"; break;
+        case ">=": opTAC = "C_GE"; break;
+        default: throw new RuntimeException("Operador relacional desconocido: " + operador);
+    }
+    generador.emitir(opTAC, resultadoTemp, izqTemp, derTemp);
+    return resultadoTemp;
+    }
 }
 
 
@@ -555,6 +786,18 @@ class ComandoMovimientoNodo extends NodoAST {
     
     public String getComando() { return comando; }
     public ExpresionNodo getParametro() { return parametro; }
+
+    @Override
+    public String generarCodigoIntermedio(GeneradorCodigoIntermedio generador) {
+        // Generar código para la expresión del parámetro (que podría ser distancia o ángulo)
+    String parametroTemp = parametro.generarCodigoIntermedio(generador);
+    
+    
+    generador.emitir(comando.toUpperCase(), null, parametroTemp);
+    return null; // No retorna un valor
+    }
+
+  
 }
 
 /**
@@ -578,6 +821,13 @@ class ComandoActuadorNodo extends NodoAST {
     
     public String getComando() { return comando; }
     public String getColor() { return color; }
+
+    @Override
+    public String generarCodigoIntermedio(GeneradorCodigoIntermedio generador) {
+    
+    generador.emitir(comando.toUpperCase(), null, color);
+    return null; // Este nodo no produce un valor que se propague
+    }
 }
 
 /**
@@ -608,6 +858,16 @@ class ComandoTiempoNodo extends NodoAST {
     
     public ExpresionNodo getDuracion() { return duracion; }
     public String getUnidad() { return unidad; }
+
+    @Override
+    public String generarCodigoIntermedio(GeneradorCodigoIntermedio generador) {
+          // 1. Generar código para la expresión de la duración
+    String duracionTemp = duracion.generarCodigoIntermedio(generador);
+    
+    
+    generador.emitir("ESPERAR", null, duracionTemp, unidad.toUpperCase());
+    return null; 
+    }
 }
 
 /**
@@ -638,6 +898,14 @@ class AsignacionNodo extends NodoAST {
     
     public String getVariable() { return variable; }
     public ExpresionNodo getValor() { return valor; }
+
+    @Override
+    public String generarCodigoIntermedio(GeneradorCodigoIntermedio generador) {
+        String valorTemp = valor.generarCodigoIntermedio(generador);
+        // Emitir la instrucción TAC de asignación
+        generador.emitir("ASIGNAR", variable, valorTemp);
+        return null; // No retorna un valor
+    }
 }
 
 /**
@@ -658,4 +926,10 @@ class ComandoControlNodo extends NodoAST {
     }
     
     public String getComando() { return comando; }
+
+    @Override
+    public String generarCodigoIntermedio(GeneradorCodigoIntermedio generador) {
+    generador.emitir(comando.toUpperCase());
+    return null;
+    }
 }

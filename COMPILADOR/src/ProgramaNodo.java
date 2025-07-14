@@ -178,5 +178,30 @@ public class ProgramaNodo extends NodoAST {
     public void agregarMetodo(NodoAST metodo) {
         instrucciones.add(metodo);
     }
+
+       @Override
+    public String generarCodigoIntermedio(GeneradorCodigoIntermedio generador) {
+        // Generar código para declaraciones globales
+        for (NodoAST decl : declaraciones) {
+            decl.generarCodigoIntermedio(generador);
+        }
+        // Generar código para métodos
+        for (NodoAST metodo : metodos) {
+            metodo.generarCodigoIntermedio(generador);
+        }
+        // Generar código para instrucciones globales (cuerpo principal)
+        for (NodoAST instr : instrucciones) {
+            instr.generarCodigoIntermedio(generador);
+        }
+        return null; // El programa completo no retorna un valor
+    }
+
+    // Este método devuelve el código intermedio generado
+    public List<InstruccionTAC> generaCodigoIntermedio(GeneradorCodigoIntermedio generador) {
+        generarCodigoIntermedio(generador); // Llama al método sobreescrito para iniciar la generación
+        return generador.getCodigo();
+        
+    }
+    
     
 }

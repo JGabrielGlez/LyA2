@@ -23,8 +23,24 @@ public class AnalizadorSintactico {
     //esto creará una lista temporal de las variables declaradas, para usar la tabla de simbolos del analizador léxico
         private Set<String> variablesDeclaradasEnParsing;
         private Set<String> metodos;//para checar que los identificadores de métodos no se repitan
+            private GeneradorCodigoIntermedio generadorCodigo;
 
-    
+
+    public AnalizadorSintactico(List<Analizador.Token> tokens, List<Analizador.EntradaTablaSimbolos> tablaSimbolos) {
+        this.tokens = tokens;
+        this.posicion = 0;
+        this.errores = new StringBuilder();
+        this.tablaSimbolos = tablaSimbolos;
+        this.variablesDeclaradasEnParsing = new HashSet<>();
+        this.metodos = new HashSet<>();
+        // *** INICIALIZAR EL GENERADOR DE CÓDIGO INTERMEDIO AQUÍ ***
+        this.generadorCodigo = new GeneradorCodigoIntermedio(); 
+    }
+
+    // *** AÑADIR ESTE MÉTODO GETTER ***
+    public GeneradorCodigoIntermedio getGeneradorCodigo() {
+        return generadorCodigo;
+    }
     
     //Esto verifica que una variable sí esté declarada en el programa antes de su uso dentro de cualquier parte del programa
    private void validarVariableDeclarada(String nombreVariable, int linea) throws ParseException {
@@ -66,23 +82,37 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
     
     //se agregó la segunda lista para poder poner la tabla de simbolos
     public ProgramaNodo parsear(List<Analizador.Token> tokens, 
-                           List<Analizador.EntradaTablaSimbolos> tablaSimbolos) {
-    this.tokens = tokens;
-    this.tablaSimbolos = tablaSimbolos;
-    this.posicion = 0;
-    this.errores.setLength(0);
-    
-    //al iniciar el parsea, se declarará este HashSet donde se pondrán las variables que ya han sido delcaradas. 
+                                List<Analizador.EntradaTablaSimbolos> tablaSimbolos) {
+        this.tokens = tokens;
+        this.tablaSimbolos = tablaSimbolos;
+        this.posicion = 0;
+        this.errores.setLength(0);
+        
         this.variablesDeclaradasEnParsing = new HashSet<>();
-        metodos = new HashSet<>();
-    
-    try {
-        return parsearPrograma();
-    } catch (ParseException e) {
-        errores.append(e.getMessage()).append("\n");
-        return null;
+        this.metodos = new HashSet<>();
+        
+        ProgramaNodo programaAST = null; // Declara la variable aquí
+        
+          // Asegurar que el generador está inicializado
+        if (this.generadorCodigo == null) {
+            this.generadorCodigo = new GeneradorCodigoIntermedio();
+        }
+
+        try {
+           
+            programaAST = parsearPrograma(); 
+
+         
+            if (programaAST != null && errores.length() == 0) { 
+                programaAST.generarCodigoIntermedio(this.generadorCodigo); 
+               
+            }
+            return programaAST; // Retorna el AST
+        } catch (ParseException e) {
+            errores.append(e.getMessage()).append("\n");
+            return null; // Retorna null si hay un error de parseo
+        }
     }
-}
     
     
     

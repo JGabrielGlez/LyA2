@@ -34,6 +34,9 @@ public abstract class NodoAST {
         return new ArrayList<>(); // Por defecto, sin hijos
     }
     
+        public abstract String generarCodigoIntermedio(GeneradorCodigoIntermedio generador);
+
+    
     // Getters para posición
     public int getLinea() { return linea; }
     public int getColumna() { return columna; }

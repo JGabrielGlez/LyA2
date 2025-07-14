@@ -26,6 +26,11 @@ class Analizador {
         }
     }
 
+    public Analizador() {
+    }
+    
+    
+
     // PATRONES DE TOKENIZACIÓN
     private static final String[][] patrones = {
                                                                     

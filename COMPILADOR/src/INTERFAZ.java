@@ -1,13 +1,17 @@
 
+import java.awt.BorderLayout;
 import java.awt.Color;
+import javax.swing.JButton;
 import java.awt.Cursor;
 import java.awt.Font;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -31,9 +35,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
+import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.table.AbstractTableModel;
 
 public class INTERFAZ extends javax.swing.JFrame {
 
@@ -48,39 +57,37 @@ public class INTERFAZ extends javax.swing.JFrame {
         initComponents();
         configurarUndoRedo();
         jScrollPane4.setRowHeaderView(new TextLineNumber(JTAEditotText));
-        
+
         JTAEditotText.getDocument().addDocumentListener(new DocumentListener() {
-    @Override
-    public void insertUpdate(DocumentEvent e) {
-        SwingUtilities.invokeLater(() -> {
-            String texto = JTAEditotText.getText();
-            
-            // Buscar la posición de "Terminar"
-            int posicionTerminar = texto.lastIndexOf("Terminar");
-            
-            if (posicionTerminar != -1) {
-                // Calcular donde termina la palabra "Terminar"
-                int finTerminar = posicionTerminar + "Terminar".length();
-                
-                // Si hay texto después de "Terminar", eliminarlo
-                if (texto.length() > finTerminar) {
-                    JTAEditotText.setText(texto.substring(0, finTerminar));
-                }
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                SwingUtilities.invokeLater(() -> {
+                    String texto = JTAEditotText.getText();
+
+                    // Buscar la posición de "Terminar"
+                    int posicionTerminar = texto.lastIndexOf("Terminar");
+
+                    if (posicionTerminar != -1) {
+                        // Calcular donde termina la palabra "Terminar"
+                        int finTerminar = posicionTerminar + "Terminar".length();
+
+                        // Si hay texto después de "Terminar", eliminarlo
+                        if (texto.length() > finTerminar) {
+                            JTAEditotText.setText(texto.substring(0, finTerminar));
+                        }
+                    }
+                });
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
             }
         });
     }
-    
-    @Override
-    public void removeUpdate(DocumentEvent e) {}
-    
-    @Override
-    public void changedUpdate(DocumentEvent e) {}
-});
-    }
-    
-    
-    
-    
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -343,8 +350,7 @@ public class INTERFAZ extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    
-    
+
     private void JCBGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_JCBGuardarActionPerformed
         if (archivoActual == null) {
             JFileChooser fileChooser = new JFileChooser();
@@ -358,7 +364,7 @@ public class INTERFAZ extends javax.swing.JFrame {
                 }
                 cargarArchivosEnPanel(archivoActual.getParentFile());
             } else {
-                return; 
+                return;
             }
         }
         try {
@@ -374,9 +380,7 @@ public class INTERFAZ extends javax.swing.JFrame {
         mostrarManual();
     }//GEN-LAST:event_JCBAyudaActionPerformed
 
-    
-    
-    
+
     private void JCBNuevoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_JCBNuevoActionPerformed
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Selecciona la carpeta para crear el nuevo archivo");
@@ -389,9 +393,9 @@ public class INTERFAZ extends javax.swing.JFrame {
                 File nuevoArchivo = new File(carpeta, nombreArchivo + ".txt");
                 try {
                     if (nuevoArchivo.createNewFile()) {
-                        JTAEditotText.setText(""); 
+                        JTAEditotText.setText("");
                         archivoActual = nuevoArchivo;
-                        cargarArchivosEnPanel(carpeta); 
+                        cargarArchivosEnPanel(carpeta);
                         JTAConsola.setText("Archivo creado: " + nuevoArchivo.getAbsolutePath());
                     }
                 } catch (IOException e) {
@@ -401,6 +405,44 @@ public class INTERFAZ extends javax.swing.JFrame {
             }
         }
     }//GEN-LAST:event_JCBNuevoActionPerformed
+
+    private void JMcodigoIntermedioMouseClicked(java.awt.event.MouseEvent evt) {
+        String codigo = JTAEditotText.getText();
+        StringBuilder errores = new StringBuilder();
+
+        // 1. Análisis léxico
+        List<Analizador.Token> tokens = Analizador.analizarLexico(codigo);
+
+        // 2. Obtener tabla de símbolos
+        List<Analizador.EntradaTablaSimbolos> tablaSimbolos = Analizador.getTablaSimbolosCompleta();
+
+        // 3. Análisis sintáctico y generación de AST
+        AnalizadorSintactico analizador = new AnalizadorSintactico(tokens, tablaSimbolos);
+        ProgramaNodo programaAST = analizador.parsear(tokens, tablaSimbolos);
+
+        // Verificar errores
+        if (analizador.getErrores().length() > 0) {
+            JTAConsola.setText("Errores de sintaxis:\n" + analizador.getErrores());
+            return;
+        }
+
+        if (programaAST == null) {
+            JTAConsola.setText("Error: No se pudo construir el AST");
+            return;
+        }
+
+        // 4. Generar y mostrar cuádruplos
+        GeneradorCodigoIntermedio generador = analizador.getGeneradorCodigo();
+        if (generador == null) {
+            JTAConsola.setText("Error: Generador de código no inicializado");
+            return;
+        }
+
+        String cuadruplos = generador.obtenerCuadruplosEnFormatoTabla();
+        JPEditorTextAnalisis.setText("Árbol Sintáctico:\n" + programaAST.mostrarArbol()
+                + "\n\nCuádruplos generados:\n" + cuadruplos);
+        JTAConsola.setText("Compilación exitosa. Cuádruplos generados.");
+    }
 
     private void JCBAbrirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_JCBAbrirActionPerformed
         JFileChooser fileChooser = new JFileChooser();
@@ -412,7 +454,7 @@ public class INTERFAZ extends javax.swing.JFrame {
             try {
                 String contenido = new String(Files.readAllBytes(archivoActual.toPath()), StandardCharsets.UTF_8);
                 JTAEditotText.setText(contenido);
-                cargarArchivosEnPanel(archivoActual.getParentFile()); 
+                cargarArchivosEnPanel(archivoActual.getParentFile());
                 JTAConsola.setText("Archivo cargado: " + archivoActual.getAbsolutePath());
             } catch (IOException e) {
                 JOptionPane.showMessageDialog(this, "Error al leer el archivo");
@@ -441,9 +483,9 @@ public class INTERFAZ extends javax.swing.JFrame {
         int result = fileChooser.showOpenDialog(null);
         if (result == JFileChooser.APPROVE_OPTION) {
             File carpetaSeleccionada = fileChooser.getSelectedFile();
-            cargarArchivosEnPanel(carpetaSeleccionada); 
-            archivoActual = null; 
-            JTAEditotText.setText(""); 
+            cargarArchivosEnPanel(carpetaSeleccionada);
+            archivoActual = null;
+            JTAEditotText.setText("");
         }
     }//GEN-LAST:event_btnCambiarCarpetaActionPerformed
 
@@ -451,7 +493,7 @@ public class INTERFAZ extends javax.swing.JFrame {
         contadorClicks++;
         if (contadorClicks == 2) {
             mostrarContenidoConsola();
-            contadorClicks = 0; 
+            contadorClicks = 0;
         }
         Timer timer = new Timer(1000, e -> contadorClicks = 0);
         timer.setRepeats(false);
@@ -480,7 +522,7 @@ public class INTERFAZ extends javax.swing.JFrame {
                     .append(" (col ").append(token.columna).append(")\n");
         }
         JPEditorTextAnalisis.setText(resultado.toString());
-        
+
     }//GEN-LAST:event_JMAnalisisLexicoMouseClicked
 
     private void JMSintacticoMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_JMSintacticoMouseClicked
@@ -494,21 +536,21 @@ public class INTERFAZ extends javax.swing.JFrame {
             resultado.append("Expresiones reconocidas por línea:\n");
             resultado.append(Analizador.obtenerPatronesPorLinea(tokens));
             JPEditorTextAnalisis.setText(resultado.toString());
-            
-           String simbolos = Analizador.getTablaSimbolosTexto();
-            
+
+            String simbolos = Analizador.getTablaSimbolosTexto();
+
             //mostrar la tabla de símbolos
             StringBuilder contenido = new StringBuilder();
             contenido.append("Tabla de símbolos generada:");
-            
-            if(simbolos.isEmpty()){
+
+            if (simbolos.isEmpty()) {
                 contenido.append("No se encontraron símbolos");
             }
-            
-                   JTAConsola.setText(contenido.toString());
-                  // System.out.println(Analizador.analizarSintaxis(tokens, errores));
-                   
-    } else {
+
+            JTAConsola.setText(contenido.toString());
+            // System.out.println(Analizador.analizarSintaxis(tokens, errores));
+
+        } else {
             JPEditorTextAnalisis.setText("❌ Se encontraron errores en la sintaxis:\n" + errores.toString());
         }
     }//GEN-LAST:event_JMSintacticoMouseClicked
@@ -520,16 +562,14 @@ public class INTERFAZ extends javax.swing.JFrame {
     private void JMCompilarMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_JMCompilarMouseClicked
         String codigo = JTAEditotText.getText();
         Analizador compilador = new Analizador();
-        
+
         List<Analizador.Token> tokens = compilador.analizarLexico(codigo);
         //Añadir otra validacion para la tabla de símbolos
-    
+
         StringBuilder errores = new StringBuilder();
-        
+
         boolean esValido = compilador.analizarSintaxis(tokens, errores);
-        
-        
-        
+
         if (esValido) {
             JTAConsola.setText("✅ Compilación exitosa. No se encontraron errores.\nGuardando archivo...");
             if (archivoActual != null) {
@@ -581,7 +621,7 @@ public class INTERFAZ extends javax.swing.JFrame {
         for (Analizador.Token token : tokens) {
             if (token.linea != lineaActual) {
                 lineaActual = token.linea;
-                
+
                 resultado.append("\n[Línea ").append(lineaActual).append("]\n");
             }
             resultado.append(token.tipo)
@@ -600,55 +640,74 @@ public class INTERFAZ extends javax.swing.JFrame {
             resultado.append("✅ Análisis sintáctico correcto.\n");
             resultado.append("Expresiones reconocidas por línea:\n");
             resultado.append(Analizador.obtenerPatronesPorLinea(tokens));
-           // JPEditorTextAnalisis.setText(resultado.toString());
-            
-            
+            // JPEditorTextAnalisis.setText(resultado.toString());
+
             resultado.append("Tabla de símbolos resultannte\n");
             resultado.append("-------------------------------------------------------------\n");
             resultado.append(mostrarTablaSimbolos(codigo));
-            
+
             //aquí muestra el árbol
             ProgramaNodo arbol = Analizador.parsearAST(codigo, errores);
             resultado.append("\n");
             resultado.append("Generación del árbol sintáctico.\n");
             resultado.append("-------------------------------------------------------------\n");
 
-            resultado.append(arbol.mostrarArbol()+"\n");
-           
-            
-            
+            resultado.append(arbol.mostrarArbol() + "\n");
+
             JPEditorTextAnalisis.setText(resultado.toString());
 
-            
-            
-            
-            
             System.out.println(arbol.mostrarArbol());
         } else {
             JPEditorTextAnalisis.setText("❌ Se encontraron errores en la sintaxis:\n" + errores.toString());
         }
-        
-        
-        
+
+        ///////////////////////////cuadruplosssssss
+    List<Analizador.EntradaTablaSimbolos> tablaSimbolos = Analizador.getTablaSimbolosCompleta();
+
+        AnalizadorSintactico analizador = new AnalizadorSintactico(tokens, tablaSimbolos);
+        ProgramaNodo programaAST = analizador.parsear(tokens, tablaSimbolos);
+
+        // Verificar errores
+        if (analizador.getErrores().length() > 0) {
+            JTAConsola.setText("Errores de sintaxis:\n" + analizador.getErrores());
+            return;
+        }
+
+        if (programaAST == null) {
+            JTAConsola.setText("Error: No se pudo construir el AST");
+            return;
+        }
+
+        GeneradorCodigoIntermedio generador = analizador.getGeneradorCodigo();
+        if (generador == null) {
+            JTAConsola.setText("Error: Generador de código no inicializado");
+            return;
+        }
+
+        //String cuadruplos = generador.obtenerCuadruplosEnFormatoTabla();
+        //JPEditorTextAnalisis.setText("Árbol Sintáctico:\n" + programaAST.mostrarArbol() + 
+        //                     "\n\nCuádruplos generados:\n" + cuadruplos);
+        JTAConsola.setText("Compilación exitosa. Cuádruplos generados.");
+
+        mostrarCuadruplosEnTabla(generador);
+        JPEditorTextAnalisis.setText("Árbol Sintáctico:\n" + programaAST.mostrarArbol());
         //falta poner la tabla de símbolos
     }//GEN-LAST:event_JMCompilarMouseClicked
 
-    
     public static String mostrarTablaSimbolos(String codigo) {
-    // Analizar el código para generar tokens
-    List<Analizador.Token> tokens = Analizador.analizarLexico(codigo);
-    
-    // Obtener tabla de símbolos completa
-    String tablaCompleta = Analizador.getTablaSimbolosTexto();
-    
-    StringBuilder resultado = new StringBuilder();
-    resultado.append(tablaCompleta).append("\n\n");
-    
-    return resultado.toString();
-}
-    
-    
-    
+        // Analizar el código para generar tokens
+        List<Analizador.Token> tokens = Analizador.analizarLexico(codigo);
+
+        // Obtener tabla de símbolos completa
+        String tablaCompleta = Analizador.getTablaSimbolosTexto();
+
+        StringBuilder resultado = new StringBuilder();
+        resultado.append(tablaCompleta).append("\n\n");
+
+        return resultado.toString();
+    }
+
+
     private void JMEjecutarMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_JMEjecutarMouseClicked
         String codigo = JTAEditotText.getText();
         List<Analizador.Token> tokens = Analizador.analizarLexico(codigo);
@@ -1021,7 +1080,7 @@ public class INTERFAZ extends javax.swing.JFrame {
                                 archivoActual = archivo;
                                 String contenido = new String(Files.readAllBytes(archivo.toPath()), StandardCharsets.UTF_8);
                                 JTAEditotText.setText(contenido);
-                                cargarArchivosEnPanel(carpeta); 
+                                cargarArchivosEnPanel(carpeta);
                             } catch (IOException e) {
                                 JOptionPane.showMessageDialog(null, "Error al abrir el archivo");
                             }
@@ -1061,10 +1120,10 @@ public class INTERFAZ extends javax.swing.JFrame {
     private void mostrarContenidoAnalisis() {
         String contenido = JPEditorTextAnalisis.getText();
         JEditorPane area = new JEditorPane();
-        area.setContentType("text/plain"); 
+        area.setContentType("text/plain");
         area.setText(contenido);
         area.setEditable(false);
-        area.setCaretPosition(0);  
+        area.setCaretPosition(0);
         JScrollPane scroll = new JScrollPane(area);
         JDialog dialogo = new JDialog(this, "Vista del Panel de Análisis", true);
         dialogo.setSize(1100, 700);
@@ -1077,10 +1136,10 @@ public class INTERFAZ extends javax.swing.JFrame {
     private void mostrarContenidoConsola() {
         String contenido = JTAConsola.getText();
         JEditorPane area = new JEditorPane();
-        area.setContentType("text/plain"); 
+        area.setContentType("text/plain");
         area.setText(contenido);
         area.setEditable(false);
-        area.setCaretPosition(0);  
+        area.setCaretPosition(0);
         JScrollPane scroll = new JScrollPane(area);
         JDialog dialogo = new JDialog(this, "Vista del Panel de Análisis", true);
         dialogo.setSize(1100, 700);
@@ -1156,7 +1215,7 @@ public class INTERFAZ extends javax.swing.JFrame {
         menu.add(pegar);
         menu.add(duplicar);
         menu.add(eliminar);
-        menu.addSeparator(); 
+        menu.addSeparator();
         menu.add(propiedades);
         menu.show(evt.getComponent(), evt.getX(), evt.getY());
     }
@@ -1189,6 +1248,199 @@ public class INTERFAZ extends javax.swing.JFrame {
             });
             menu.add(pegar);
             menu.show(evt.getComponent(), evt.getX(), evt.getY());
+        }
+    }
+
+    /////////////////////////////clase para la tabla cuadruplos
+        private class CuadruploTableModel extends AbstractTableModel {
+
+        private final String[] columnNames = {"#", "Operacion", "Argumento 1", "Argumento 2", "Resultado"};
+        private List<InstruccionTAC> data;
+
+        public CuadruploTableModel(List<InstruccionTAC> cuadruplos) {
+            this.data = cuadruplos;
+        }
+
+        @Override
+        public int getRowCount() {
+            return data.size();
+        }
+
+        @Override
+        public int getColumnCount() {
+            return columnNames.length;
+        }
+
+        @Override
+        public String getColumnName(int col) {
+            return columnNames[col];
+        }
+
+        @Override
+        public Object getValueAt(int rowIndex, int columnIndex) {
+            InstruccionTAC cuadruplo = data.get(rowIndex);
+            switch (columnIndex) {
+                case 0:
+                    return rowIndex + 1;
+                case 1:
+                    return cuadruplo.getOperacion();
+                case 2:
+                    return cuadruplo.getArg1();
+                case 3:
+                    return cuadruplo.getArg2();
+                case 4:
+                    return cuadruplo.getResultado();
+                default:
+                    return null;
+            }
+        }
+    }
+
+    ///////////////////////clase para tripletas
+        private class TripleteTableModel extends AbstractTableModel {
+
+        private final String[] columnNames = {"#", "Operacion", "Argumento 1", "Argumento 2"};
+        private List<InstruccionTAC> data;
+
+        public TripleteTableModel(List<InstruccionTAC> tripletes) {
+            this.data = tripletes;
+        }
+
+        @Override
+        public int getRowCount() {
+            return data.size();
+        }
+
+        @Override
+        public int getColumnCount() {
+            return columnNames.length;
+        }
+
+        @Override
+        public String getColumnName(int col) {
+            return columnNames[col];
+        }
+
+        @Override
+        public Object getValueAt(int rowIndex, int columnIndex) {
+            InstruccionTAC triplete = data.get(rowIndex);
+            switch (columnIndex) {
+                case 0:
+                    return rowIndex + 1;
+                case 1:
+                    return triplete.getOperacion();
+                case 2:
+                    return triplete.getArg1();
+                case 3:
+                    return triplete.getArg2();
+                default:
+                    return null;
+            }
+        }
+    }
+
+    // Método para personalizar el aspecto de las tablas
+    private void personalizarTabla(JTable table) {
+        table.setAutoCreateRowSorter(true);
+        table.setFillsViewportHeight(true);
+        table.setRowHeight(25);
+        table.setFont(new Font("Monospaced", Font.PLAIN, 14));
+        table.setGridColor(Color.LIGHT_GRAY);
+        table.getTableHeader().setBackground(new Color(70, 130, 180));
+        table.getTableHeader().setForeground(Color.PINK);
+        table.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 14));
+    }
+
+    private void mostrarCuadruplosEnTabla(GeneradorCodigoIntermedio generador) {
+        //frame
+        JFrame frame = new JFrame("Cuadruplos y Tripletas Generados");
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frame.setSize(1200, 600);
+        frame.setLayout(new BorderLayout());
+
+        ////pesta;a dise;o
+        JTabbedPane tabbedPane = new JTabbedPane();
+
+        //cuadruplosss
+        JPanel cuadruplosPanel = new JPanel(new BorderLayout());
+        JTable cuadruplosTable = new JTable(new CuadruploTableModel(generador.getCodigo()));
+        personalizarTabla(cuadruplosTable);
+        cuadruplosPanel.add(new JScrollPane(cuadruplosTable), BorderLayout.CENTER);
+        tabbedPane.addTab("Cuadruplos", cuadruplosPanel);
+
+        //tripletassssa
+        JPanel tripletasPanel = new JPanel(new BorderLayout());
+        JTable tripletasTable = new JTable(new TripleteTableModel(generador.getCodigo()));
+        personalizarTabla(tripletasTable);
+        tripletasPanel.add(new JScrollPane(tripletasTable), BorderLayout.CENTER);
+        tabbedPane.addTab("Tripletas", tripletasPanel);
+
+        JButton exportarBtn = new JButton();
+        exportarBtn.setText("Enviar a Archivo .txt");
+        exportarBtn.addActionListener(e -> {
+            archivoTxt(generador.getCodigo(), "cuadruplos");
+            archivoTxt(generador.getCodigo(), "tripletas");
+        });
+
+        frame.add(tabbedPane, BorderLayout.CENTER);
+        frame.add(exportarBtn, BorderLayout.SOUTH);
+        frame.setLocationRelativeTo(this);
+        frame.setVisible(true);
+    }
+
+    ///////////////////////////arcvhivosd
+    private void archivoTxt(List<InstruccionTAC> instrucciones, String tipo) {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Guardar " + tipo + " como TXT");
+
+        if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            String fileName = file.getName().toLowerCase();
+
+            if (!fileName.endsWith(".txt")) {
+                file = new File(file.getAbsolutePath() + "_" + tipo + ".txt");
+            } else {
+                file = new File(file.getAbsolutePath().replace(".txt", "_" + tipo + ".txt"));
+            }
+
+            try (PrintWriter writer = new PrintWriter(file)) {
+                if (tipo.equals("cuadruplos")) {
+                    // Encabezados para cuádruplos
+                    writer.println("TABLA DE CUADRUPLOS GENERADOS");
+                    writer.println("==============================================");
+                    writer.printf("%-6s %-15s %-20s %-20s %-15s%n",
+                            "N°", "Operacion", "Argumento 1", "Argumento 2", "Resultado");
+                    writer.println("----------------------------------------------");
+
+                    for (int i = 0; i < instrucciones.size(); i++) {
+                        InstruccionTAC c = instrucciones.get(i);
+                        writer.printf("%-6d %-15s %-20s %-20s %-15s%n",
+                                i + 1,
+                                c.getOperacion() != null ? c.getOperacion() : "",
+                                c.getArg1() != null ? c.getArg1() : "",
+                                c.getArg2() != null ? c.getArg2() : "",
+                                c.getResultado() != null ? c.getResultado() : "");
+                    }
+                } else {
+                    writer.println("TABLA DE TRIPLETAS GENERADAS");
+                    writer.println("========================================");
+                    writer.printf("%-6s %-15s %-20s %-20s%n",
+                            "N°", "Operacion", "Argumento 1", "Argumento 2");
+                    writer.println("----------------------------------------");
+
+                    for (int i = 0; i < instrucciones.size(); i++) {
+                        InstruccionTAC t = instrucciones.get(i);
+                        writer.printf("%-6d %-15s %-20s %-20s%n",
+                                i + 1,
+                                t.getOperacion() != null ? t.getOperacion() : "",
+                                t.getArg1() != null ? t.getArg1() : "",
+                                t.getArg2() != null ? t.getArg2() : "");
+                    }
+                }
+                JTAConsola.setText("Archivo " + tipo + " guardado en: " + file.getAbsolutePath());
+            } catch (FileNotFoundException ex) {
+                JTAConsola.setText("Error al exportar " + tipo + ": " + ex.getMessage());
+            }
         }
     }
 
