@@ -52,6 +52,7 @@ public class INTERFAZ extends javax.swing.JFrame {
     private File archivoCopiado = null;
     private File carpetaActual = null;
     private Timer resaltadoTimer;
+    GeneradorCodigoIntermedio generador;
 
     public INTERFAZ() {
         initComponents();
@@ -312,7 +313,17 @@ public class INTERFAZ extends javax.swing.JFrame {
         });
         JBMBarra.add(JMSintactico);
 
-        JMAnalisisSemantico.setText("Analisis Semantico");
+        JMAnalisisSemantico.setText("Código Intermedio");
+        JMAnalisisSemantico.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                JMAnalisisSemanticoMouseClicked(evt);
+            }
+        });
+        JMAnalisisSemantico.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                JMAnalisisSemanticoActionPerformed(evt);
+            }
+        });
         JBMBarra.add(JMAnalisisSemantico);
 
         JMTraducirPrograma.setText("Traducir Programa");
@@ -678,7 +689,7 @@ public class INTERFAZ extends javax.swing.JFrame {
             return;
         }
 
-        GeneradorCodigoIntermedio generador = analizador.getGeneradorCodigo();
+       generador = analizador.getGeneradorCodigo();
         if (generador == null) {
             JTAConsola.setText("Error: Generador de código no inicializado");
             return;
@@ -687,11 +698,15 @@ public class INTERFAZ extends javax.swing.JFrame {
         //String cuadruplos = generador.obtenerCuadruplosEnFormatoTabla();
         //JPEditorTextAnalisis.setText("Árbol Sintáctico:\n" + programaAST.mostrarArbol() + 
         //                     "\n\nCuádruplos generados:\n" + cuadruplos);
-        JTAConsola.setText("Compilación exitosa. Cuádruplos generados.");
+        JTAConsola.setText("Compilación exitosa.");
 
-        mostrarCuadruplosEnTabla(generador);
-        JPEditorTextAnalisis.setText("Árbol Sintáctico:\n" + programaAST.mostrarArbol());
+       
+        JPEditorTextAnalisis.setText("Árbol Sintáctico:\n" + programaAST.mostrarArbol()+"\n\n"+Analizador.getTablaSimbolosTexto());
+        
+        
         //falta poner la tabla de símbolos
+        
+        
     }//GEN-LAST:event_JMCompilarMouseClicked
 
     public static String mostrarTablaSimbolos(String codigo) {
@@ -732,6 +747,21 @@ public class INTERFAZ extends javax.swing.JFrame {
         animDialog.getContentPane().add(panelAnim);
         animDialog.setVisible(true);
     }//GEN-LAST:event_JMEjecutarMouseClicked
+
+    private void JMAnalisisSemanticoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_JMAnalisisSemanticoActionPerformed
+       
+    }//GEN-LAST:event_JMAnalisisSemanticoActionPerformed
+
+    private void JMAnalisisSemanticoMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_JMAnalisisSemanticoMouseClicked
+             if (generador==null) {
+            JOptionPane.showMessageDialog(this,"Es necesario compilar el programa antes...","Compilación necesaria",JOptionPane.WARNING_MESSAGE);
+           return;
+        }
+         JTAConsola.setText("Cuádruplos generados.");
+
+       
+        mostrarCuadruplosEnTabla(generador);
+    }//GEN-LAST:event_JMAnalisisSemanticoMouseClicked
 
     private void mostrarManual() {
         String manual = """
@@ -1350,6 +1380,8 @@ public class INTERFAZ extends javax.swing.JFrame {
         table.getTableHeader().setForeground(Color.PINK);
         table.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 14));
     }
+    
+    
 
     private void mostrarCuadruplosEnTabla(GeneradorCodigoIntermedio generador) {
         //frame

@@ -83,8 +83,12 @@
         </Menu>
         <Menu class="javax.swing.JMenu" name="JMAnalisisSemantico">
           <Properties>
-            <Property name="text" type="java.lang.String" value="Analisis Semantico"/>
+            <Property name="text" type="java.lang.String" value="C&#xf3;digo Intermedio"/>
           </Properties>
+          <Events>
+            <EventHandler event="mouseClicked" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="JMAnalisisSemanticoMouseClicked"/>
+            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="JMAnalisisSemanticoActionPerformed"/>
+          </Events>
         </Menu>
         <Menu class="javax.swing.JMenu" name="JMTraducirPrograma">
           <Properties>
