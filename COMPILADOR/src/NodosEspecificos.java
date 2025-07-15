@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -25,7 +26,7 @@ abstract class DeclaracionNodo  extends NodoAST{
  * Para: <declaracion_metodo> ::= "iniciar_metodo" <identificador> "("  <parametros>  ")"<declaraciones> <instrucciones>  "fin_metodo"
  */
 class DeclaracionMetodoNodo extends DeclaracionNodo{
-    private Set<String> parametros;
+    private Set<ParametroNodo> parametros;
     private List<DeclaracionNodo> declaraciones;
     private List<NodoAST> instrucciones;
 
@@ -45,16 +46,17 @@ class DeclaracionMetodoNodo extends DeclaracionNodo{
      * @return falso cuando no se puede agregar el parámetro debido a que su identificador ya fue usado
      * 
      */
+    //debo hacer que tambien guarde el tipo del parámetro en cuestión
     public boolean agregarParametro(ParametroNodo parametro) { 
        
-        if(parametros.contains(parametro.getIdentificador())){
+        if(parametros.contains(parametro)){
             return false;}
         else{
-            parametros.add(parametro.getIdentificador());
+            parametros.add(parametro);
             return true;
         }
     }
-
+    
 
 
     @Override
@@ -63,13 +65,15 @@ return "";
 //throw new UnsupportedOperationException("Not supported yet."); 
     }
 
-    public Set<String> getParametros() {
+    public Set<ParametroNodo> getParametros() {
         return parametros;
     }
 
-    public void setParametros(Set<String> parametros) {
+    public void setParametros(Set<ParametroNodo> parametros) {
         this.parametros = parametros;
     }
+    
+    
 
     
     
@@ -136,6 +140,28 @@ class ParametroNodo extends NodoAST{
         return identificador;
     }
 
+    
+    public boolean equals(Object obj) {
+        // 1. Verificar si es el mismo objeto (referencia)
+        if (this == obj) return true;
+        
+        // 2. Verificar si es null o diferente clase
+        if (obj == null || getClass() != obj.getClass()) return false;
+        
+        // 3. Hacer casting
+        ParametroNodo that = (ParametroNodo) obj;
+        
+        // 4. Comparar identificador Y tipo
+        return Objects.equals(identificador, that.identificador) && 
+               Objects.equals(tipo, that.tipo);
+    }
+    
+    @Override
+    public int hashCode() {
+        // IMPORTANTE: hashCode debe ser consistente con equals
+        return Objects.hash(identificador, tipo);
+    }
+
     public void setIdentificador(String identificador) {
         this.identificador = identificador;
     }
@@ -169,7 +195,6 @@ return "";
  */
 
 //==============================================
-
 
 
 /**
@@ -210,6 +235,14 @@ class DeclaracionNumeroNodo extends DeclaracionNodo {
     
     }
 }
+
+
+////////nodo para usar los metodos id(parametros) y ya
+class UsarMetodoNodo extends NodoAST {
+    private String identificador;
+    private 
+}
+
 
 /**
  * Para: <declaracion_sensor> ::= <identificador> "tipo" "Sensor" "=" <numero>

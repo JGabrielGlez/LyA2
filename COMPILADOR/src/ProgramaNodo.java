@@ -3,7 +3,7 @@ import java.util.List;
 
 public class ProgramaNodo extends NodoAST {
     public List<NodoAST> declaraciones;
-    public List<NodoAST> metodos;
+    public List<DeclaracionMetodoNodo> metodos;
     public List<NodoAST> instrucciones;
     
     public ProgramaNodo() {

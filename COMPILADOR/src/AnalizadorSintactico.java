@@ -3,6 +3,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import java.util.List;
+
+import java.util.List;
+
 
 
 /**
@@ -368,8 +376,75 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
     /**
      * 
      *<usar_metodo>::= <identificador> "(" (parametros | ε) ")"
-     * @
+     * 
      */
+    
+    private void parsearUsarMetodo(ProgramaNodo p) throws ParseException{
+        String identificador = consumirTipo("IDENTIFICADOR").lexema;
+        consumir("(");
+        boolean existe=false;
+        
+        Set<ParametroNodo> parametros =null;
+        
+        //checar que esté declarado el método
+        for(DeclaracionMetodoNodo a:p.metodos)
+            if(a.identificador.equals(identificador)){existe=true ; 
+                parametros=a.getParametros();//para acceder a la
+            }if (!existe) throw new  ParseException("Error en línea: "+tokenActual().linea+" Método "+identificador
+                    + " no fue declarado");
+            
+        //checar si está vacío y si coincide con los parámetros del método, ya está fuera del for
+        if (posicion + 1 < tokens.size() && tokens.get(posicion + 1).lexema.equals(")")  ) {
+            //checar que verdaderamente, ese identificador que corresponde a un método, no tiene parámetros
+            for (DeclaracionMetodoNodo e : p.metodos) 
+                if(e.identificador.equals(identificador) && !e.getParametros().isEmpty())throw new ParseException(
+                "Error en línea: "+tokenActual().linea+" No se recibieron parámetros.");  
+            consumir(")");
+        }
+        //se quiere usar un método con parámetros, debo checar tanto que los parámetros sean usados, como que 
+        //hayan sido previamente declarados
+        boolean existeNombre, coincideTipo;
+        
+        List<ParametroNodo> lista = new ArrayList<>(parametros);        
+        
+        
+        while(hayTokens() && verificarTipo("IDENTIFICADOR")){
+            //buscar en la tabla de simbolos si existe ese id y si coincide con su tipo dato
+            Analizador.Token t = tokenActual();
+            existeNombre = false; coincideTipo = false;
+            String tipo="";
+            
+            for(Analizador.EntradaTablaSimbolos e:tablaSimbolos){
+                
+                //Primero checar si existe y guardar esa referencia para checar su tipo con el nodoParametros declarado del método
+                if(e.getNombre().equals(t.lexema)) existeNombre = true;
+                tipo = e.getTipo();
+                break;
+            }
+            
+            if(existeNombre==false)throw new ParseException("Error en línea: "+t.linea+" variable pasada como parámetro: "+t.lexema+" no existe");
+                
+            //ya tengo la referencia de la entrada guardada, ahora falta comparar ese tipo con el tipo guardado del parámetros
+            //acceder a la primera posicion de la lista de parametros del metodo
+
+            if(!tipo.equals(lista.get(posicion).getTipo())) throw new ParseException(
+            "Error en línea : "+t.linea+" tipo de dato pasado no coincide");
+                    
+                //checar si hay coma, debido a que sí coincide con los parametros pasados
+                
+            
+                if (tokenActual().lexema.equals(",")) {
+                    //se vuelve a parseat el parametro
+                    consumir(",");
+                    if (!verificarTipo("IDENTIFICADOR")) {
+                       throw new ParseException("Se esperaba identificador después de ',' en línea " + tokenActual().linea);
+        }
+            }
+        //una vez agregado todo como sus parametros, declaraciones e instrucciones, devuelve el nodo con esas tres listas completas
+        }    
+        consumir(")");
+        
+    }
     
     private ParametroNodo parsearParametroNodo()throws ParseException {
         //estoy en un token identificador
@@ -552,7 +627,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
      * <instruccion> ::= <comando_movimiento> | <comando_actuador> | <comando_tiempo> 
      *                 | <estructura_control> | <asignacion> | <comando_control>
      */
-    private NodoAST parsearInstruccion() throws ParseException {
+    private NodoAST parsearInstruccion(ProgramaNodo p) throws ParseException {
         saltarComentarios();
         
         Analizador.Token token = tokenActual();
@@ -591,7 +666,10 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         else if (verificarTipo("IDENTIFICADOR") && posicion + 1 < tokens.size() && 
                  tokens.get(posicion + 1).lexema.equals("=")) {
             return parsearAsignacion();
-        }
+        } // usar metodo declarado
+        else if (verificarTipo("IDENTIFICADOR") && posicion + 1 < tokens.size() && 
+                 tokens.get(posicion + 1).lexema.equals("("))
+            return parsearUsarMetodo(p);
         else {
             throw new ParseException("Instrucción no reconocida: '" + lexema + "' en línea " + token.linea);
         }
