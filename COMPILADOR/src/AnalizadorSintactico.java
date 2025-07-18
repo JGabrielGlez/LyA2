@@ -327,8 +327,8 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
             consumir(")");
             parsearDeclaraciones(metodos);
             
-            parsearInstrucciones(p);
-                       consumir("fin_metodo");
+            parsearInstrucciones(metodos,p);
+                       //consumir("fin_metodo");
 
             return metodos;
            
@@ -363,8 +363,8 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
             //se deben de parsear las declaraciones nuevas y las instrucciones;
             parsearDeclaraciones(metodos);
             
-            parsearInstrucciones(p);
-           consumir("fin_metodo");
+            parsearInstrucciones(metodos,p);
+          // consumir("fin_metodo");
          return metodos;
     }
     
@@ -499,9 +499,9 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
                 DeclaracionMetodoNodo metodo =parsearMetodo(programa);
                 programa.agregarMetodo(metodo);
 
-                saltarComentarios();//esto es para checar si no estamos ante una palabra de cierre
+                saltarComentarios();
 
-
+                consumir("fin_metodo");
 
             }else{
                 throw new ParseException("Sintaxis de métodos: 'iniciar_metodo' <identificador>'('<parametros>')'<declaraciones><instrucciones> 'fin_metodo'");
