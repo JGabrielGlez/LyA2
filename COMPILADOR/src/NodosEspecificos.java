@@ -238,9 +238,29 @@ class DeclaracionNumeroNodo extends DeclaracionNodo {
 
 
 ////////nodo para usar los metodos id(parametros) y ya
-class UsarMetodoNodo extends NodoAST {
+    class UsarMetodoNodo extends NodoAST {
     private String identificador;
-    private 
+    private Set<ParametroNodo> parametros;
+    public String toString(){return"";}
+
+    public UsarMetodoNodo(String identificador, Set<ParametroNodo> parametros) {
+        this.identificador = identificador;
+        this.parametros = parametros;
+    }
+
+    public UsarMetodoNodo(String identificador, Set<ParametroNodo> parametros, int linea, int columna) {
+        super(linea, columna);
+        this.identificador = identificador;
+        this.parametros = parametros;
+    }
+    
+    
+
+    @Override
+    public String generarCodigoIntermedio(GeneradorCodigoIntermedio generador) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+    
 }
 
 

@@ -1,13 +1,8 @@
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
+import java.util.Arrays;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
-import java.util.List;
 
 import java.util.List;
 
@@ -318,7 +313,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
      /**
      * para:     <identificador> "("  <parametros>  ")"<declaraciones> <instrucciones>
      */
-    private DeclaracionMetodoNodo parsearMetodo() throws ParseException{
+    private DeclaracionMetodoNodo parsearMetodo(ProgramaNodo p) throws ParseException{
        //esta ubicado en un id
         Analizador.Token token = tokenActual();
        DeclaracionMetodoNodo metodos = new DeclaracionMetodoNodo(token.lexema, posicion, posicion);
@@ -332,7 +327,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
             consumir(")");
             parsearDeclaraciones(metodos);
             
-            parsearInstrucciones(metodos);
+            parsearInstrucciones(p);
                        consumir("fin_metodo");
 
             return metodos;
@@ -368,7 +363,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
             //se deben de parsear las declaraciones nuevas y las instrucciones;
             parsearDeclaraciones(metodos);
             
-            parsearInstrucciones(metodos);
+            parsearInstrucciones(p);
            consumir("fin_metodo");
          return metodos;
     }
@@ -378,72 +373,73 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
      *<usar_metodo>::= <identificador> "(" (parametros | ε) ")"
      * 
      */
-    
-    private void parsearUsarMetodo(ProgramaNodo p) throws ParseException{
+        private UsarMetodoNodo parsearUsarMetodo(ProgramaNodo p) throws ParseException {
         String identificador = consumirTipo("IDENTIFICADOR").lexema;
         consumir("(");
-        boolean existe=false;
-        
-        Set<ParametroNodo> parametros =null;
-        
-        //checar que esté declarado el método
-        for(DeclaracionMetodoNodo a:p.metodos)
-            if(a.identificador.equals(identificador)){existe=true ; 
-                parametros=a.getParametros();//para acceder a la
-            }if (!existe) throw new  ParseException("Error en línea: "+tokenActual().linea+" Método "+identificador
-                    + " no fue declarado");
-            
-        //checar si está vacío y si coincide con los parámetros del método, ya está fuera del for
-        if (posicion + 1 < tokens.size() && tokens.get(posicion + 1).lexema.equals(")")  ) {
-            //checar que verdaderamente, ese identificador que corresponde a un método, no tiene parámetros
-            for (DeclaracionMetodoNodo e : p.metodos) 
-                if(e.identificador.equals(identificador) && !e.getParametros().isEmpty())throw new ParseException(
-                "Error en línea: "+tokenActual().linea+" No se recibieron parámetros.");  
-            consumir(")");
-        }
-        //se quiere usar un método con parámetros, debo checar tanto que los parámetros sean usados, como que 
-        //hayan sido previamente declarados
-        boolean existeNombre, coincideTipo;
-        
-        List<ParametroNodo> lista = new ArrayList<>(parametros);        
-        
-        
-        while(hayTokens() && verificarTipo("IDENTIFICADOR")){
-            //buscar en la tabla de simbolos si existe ese id y si coincide con su tipo dato
-            Analizador.Token t = tokenActual();
-            existeNombre = false; coincideTipo = false;
-            String tipo="";
-            
-            for(Analizador.EntradaTablaSimbolos e:tablaSimbolos){
-                
-                //Primero checar si existe y guardar esa referencia para checar su tipo con el nodoParametros declarado del método
-                if(e.getNombre().equals(t.lexema)) existeNombre = true;
-                tipo = e.getTipo();
-                break;
-            }
-            
-            if(existeNombre==false)throw new ParseException("Error en línea: "+t.linea+" variable pasada como parámetro: "+t.lexema+" no existe");
-                
-            //ya tengo la referencia de la entrada guardada, ahora falta comparar ese tipo con el tipo guardado del parámetros
-            //acceder a la primera posicion de la lista de parametros del metodo
+        boolean existe = false;
+        DeclaracionMetodoNodo datos;
+        ParametroNodo[] parametros;
 
-            if(!tipo.equals(lista.get(posicion).getTipo())) throw new ParseException(
-            "Error en línea : "+t.linea+" tipo de dato pasado no coincide");
+        //checar que esté declarado el método
+        for (DeclaracionMetodoNodo a : p.metodos) {
+            if (a.identificador.equals(identificador)) {
+                existe = true;
+                datos = a;
+                parametros = datos.getParametros().toArray(new ParametroNodo[0]);//crea el arreglo con el tamaño del set
+                //checar si está vacío y si coincide con los parámetros del método, ya está fuera del for
+                if (posicion + 1 < tokens.size() && tokens.get(posicion + 1).lexema.equals(")")) {
+                    //checar que verdaderamente, ese identificador que corresponde a un método, no tiene parámetros
+                    if (parametros.length != 0) {
+                        throw new ParseException("Error en línea: " + tokenActual().linea + " La cantidad de parámetros no coincide con el método");
+                    }
+                    consumir(")");
+
+                    return new UsarMetodoNodo(identificador, a.getParametros());
+                }
+
+                //aquí empiezo a validar cuando tiene parametros pasados
+                //se quiere usar un método con parámetros, debo checar tanto que los parámetros sean usados, como que 
+                //hayan sido previamente declarados
+                Analizador.Token t;
+
+                int i = 0;
+
+                while (hayTokens() && verificarTipo("IDENTIFICADOR")) {
+                    t = tokenActual();
+                    //contador para avanzar en la lista de parametros de los datos
+                    //checar que la cantidad de parametros sea la correcta, mirando hacia adelante
+                    if (i == parametros.length && posicion + 1 < tokens.size() && tokens.get(posicion + 1).lexema.equals(",")) {
+                        throw new ParseException("Error en línea: " + t.linea + " Cantidad de parámetros no coincide con los necesarios");
+                    }
+                    //buscar en la tabla de simbolos si existe ese id y si coincide con su tipo dato
+
+                    //si la cantidad de parametros coincide y el sig token es el cierre del paréntesis, significa que ya se terminó el parseo
+                    //para el nodo UsarMetodo
+                    //verificar el tipo de parámetro pasado
+                    if (!t.tipo.equals(parametros[i++].getTipo())) {
+                        throw new ParseException("Error en línea: "
+                                + t.linea + " tipo de parámetro no coincide, se esperaba un "
+                                + parametros[i - 1].getTipo());
+                    }
+                    consumirTipo("IDENTIFICADOR");
                     
-                //checar si hay coma, debido a que sí coincide con los parametros pasados
-                
-            
-                if (tokenActual().lexema.equals(",")) {
-                    //se vuelve a parseat el parametro
+                    //Ya consumí el identificador, si el token actual es el cierre, debo retornar el nodo
+                    if (i == parametros.length && tokenActual().lexema.equals(")")) {
+                        //pasado todo esto, ya puede retornar el nodo     
+                        consumir(")");
+                        return new UsarMetodoNodo(identificador, new HashSet<>(Arrays.asList(parametros)));
+                    }
+
                     consumir(",");
-                    if (!verificarTipo("IDENTIFICADOR")) {
-                       throw new ParseException("Se esperaba identificador después de ',' en línea " + tokenActual().linea);
-        }
+                }
+                if (!existe) {
+                    throw new ParseException("Error en línea: " + tokenActual().linea + " Método " + identificador
+                            + " no fue declarado");
+                }
+
             }
-        //una vez agregado todo como sus parametros, declaraciones e instrucciones, devuelve el nodo con esas tres listas completas
-        }    
-        consumir(")");
-        
+        }
+        return null;
     }
     
     private ParametroNodo parsearParametroNodo()throws ParseException {
@@ -500,7 +496,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
                 
                 
                 //===========================================
-                DeclaracionMetodoNodo metodo =parsearMetodo();
+                DeclaracionMetodoNodo metodo =parsearMetodo(programa);
                 programa.agregarMetodo(metodo);
 
                 saltarComentarios();//esto es para checar si no estamos ante una palabra de cierre
@@ -508,7 +504,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
 
 
             }else{
-                throw new ParseException("Sintaxis de métodos: 'iniciar_metodo' <identificador>'('<parametros>')'<declaraciones><instrucciones>");
+                throw new ParseException("Sintaxis de métodos: 'iniciar_metodo' <identificador>'('<parametros>')'<declaraciones><instrucciones> 'fin_metodo'");
             }
         }
 
@@ -601,7 +597,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
                 break;
             }
             
-            NodoAST instruccion = parsearInstruccion();
+            NodoAST instruccion = parsearInstruccion(programa);
             if (instruccion != null) {
                 programa.agregarInstruccion(instruccion);
             }
@@ -609,13 +605,13 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         }
     }
     //sobreescritura de este método para agregar las isntrucciones al nodo DeclaracionMetodoNodo
-    private void parsearInstrucciones(DeclaracionMetodoNodo metodos) throws ParseException {
+    private void parsearInstrucciones(DeclaracionMetodoNodo metodos, ProgramaNodo p) throws ParseException {
         saltarComentarios();
         //quite hayTokens() &&
         while ( !verificar("fin_metodo")) {
             // Verificar si no estamos en una palabra de cierre
 
-            NodoAST instruccion = parsearInstruccion();
+            NodoAST instruccion = parsearInstruccion(p);
             if (instruccion != null) {
                 metodos.agregarInstruccion(instruccion);
             }
@@ -639,11 +635,11 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         
         // Estructuras de control
         if (lexema.equals("si")) {
-            return parsearBloqueSi();
+            return parsearBloqueSi(p);
         } else if (lexema.equals("para")) {
-            return parsearBloquePara();
+            return parsearBloquePara(p);
         } else if (lexema.equals("mientras")) {
-            return parsearBloqueMientras();
+            return parsearBloqueMientras(p);
         }
         // Comandos de movimiento
         else if (lexema.equals("mover_adelante") || lexema.equals("mover_atras") || 
@@ -796,7 +792,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
     /**
      * <bloque_si> ::= "si" <condicion> "entonces" <instrucciones> "fin si"
      */
-    private SiNodo parsearBloqueSi() throws ParseException {
+    private SiNodo parsearBloqueSi(ProgramaNodo p) throws ParseException {
         Analizador.Token si = consumir("si");
         CondicionNodo condicion = parsearCondicion();
         consumir("entonces");
@@ -806,7 +802,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         // Parsear instrucciones hasta "fin si"
         saltarComentarios();
         while (hayTokens() && !verificar("fin si")) {
-            NodoAST instruccion = parsearInstruccion();
+            NodoAST instruccion = parsearInstruccion(p);
             if (instruccion != null) {
                 nodoSi.agregarInstruccion(instruccion);
             }
@@ -820,7 +816,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
     /**
      * <bloque_para> ::= "para" <identificador> "=" <expresion> "hasta" <expresion> "hacer" <instrucciones> "fin para"
      */
-    private ParaNodo parsearBloquePara() throws ParseException {
+    private ParaNodo parsearBloquePara(ProgramaNodo p) throws ParseException {
         Analizador.Token para = consumir("para");
         Analizador.Token variable = consumirTipo("IDENTIFICADOR");
         
@@ -840,7 +836,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         // Parsear instrucciones hasta "fin para"
         saltarComentarios();
         while (hayTokens() && !verificar("fin para")) {
-            NodoAST instruccion = parsearInstruccion();
+            NodoAST instruccion = parsearInstruccion(p );
             if (instruccion != null) {
                 nodoPara.agregarInstruccion(instruccion);
             }
@@ -854,7 +850,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
     /**
      * <bloque_mientras> ::= "mientras" <condicion> "hacer" <instrucciones> "fin mientras"
      */
-    private MientrasNodo parsearBloqueMientras() throws ParseException {
+    private MientrasNodo parsearBloqueMientras(ProgramaNodo p) throws ParseException {
         Analizador.Token mientras = consumir("mientras");
         CondicionNodo condicion = parsearCondicion();
         consumir("hacer");
@@ -864,7 +860,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         // Parsear instrucciones hasta "fin mientras"
         saltarComentarios();
         while (hayTokens() && !verificar("fin mientras")) {
-            NodoAST instruccion = parsearInstruccion();
+            NodoAST instruccion = parsearInstruccion(p);
             if (instruccion != null) {
                 nodoMientras.agregarInstruccion(instruccion);
             }
