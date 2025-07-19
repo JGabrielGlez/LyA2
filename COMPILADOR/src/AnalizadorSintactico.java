@@ -430,8 +430,10 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
                     //buscar dentro de la tabla de simbolos ese identificador y traerme el tipo
                     String tipo = "";
                     for(Analizador.EntradaTablaSimbolos entrada : tablaSimbolos){
-                        if(entrada.getNombre().equals(t.lexema))
+                        if(entrada.getNombre().equals(t.lexema)){
                             tipo=entrada.getTipo();
+                            break;//encuentra ese elemento en la tabla de simbolos, guarda su tipo y se sale del bucle
+                    }
                     }
                     
                     if (!tipo.equals(parametros.get(i-1).getTipo())) {
