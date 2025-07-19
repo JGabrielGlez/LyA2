@@ -175,8 +175,8 @@ public class ProgramaNodo extends NodoAST {
     public void agregarInstruccion(NodoAST instruccion) {
         instrucciones.add(instruccion);
     }
-    public void agregarMetodo(NodoAST metodo) {
-        instrucciones.add(metodo);
+    public void agregarMetodo(DeclaracionMetodoNodo metodo) {
+        metodos.add(metodo);
     }
 
        @Override

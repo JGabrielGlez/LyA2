@@ -316,7 +316,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
     private DeclaracionMetodoNodo parsearMetodo(ProgramaNodo p) throws ParseException{
        //esta ubicado en un id
         Analizador.Token token = tokenActual();
-       DeclaracionMetodoNodo metodos = new DeclaracionMetodoNodo(token.lexema, posicion, posicion);
+       DeclaracionMetodoNodo metodo = new DeclaracionMetodoNodo(token.lexema, posicion, posicion);
         consumirTipo("IDENTIFICADOR");
         consumir("(");
         
@@ -325,12 +325,12 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         //para metodos sin parametros FUNCIONA
         if (token.lexema.equals(")")) {
             consumir(")");
-            parsearDeclaraciones(metodos);
+            parsearDeclaraciones(metodo);
             
-            parsearInstrucciones(metodos,p);
+            parsearInstrucciones(metodo,p);
                        //consumir("fin_metodo");
 
-            return metodos;
+            return metodo;
            
         }
         
@@ -342,7 +342,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
             
             
             ParametroNodo parametro = parsearParametroNodo();
-                if(!metodos.agregarParametro(parametro))
+                if(!metodo.agregarParametro(parametro))
                     throw new ParseException("Error en línea: "+parametro.linea+
                 ". El parámetro con identificador: "+parametro.getIdentificador()+" ya fue declarado.");
                 
@@ -361,11 +361,11 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         consumir(")");
             
             //se deben de parsear las declaraciones nuevas y las instrucciones;
-            parsearDeclaraciones(metodos);
+            parsearDeclaraciones(metodo);
             
-            parsearInstrucciones(metodos,p);
+            parsearInstrucciones(metodo,p);
           // consumir("fin_metodo");
-         return metodos;
+         return metodo;
     }
     
     /**
@@ -379,22 +379,29 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         boolean existe = false;
         DeclaracionMetodoNodo datos;
         ParametroNodo[] parametros;
-
+        System.out.println("Checando p.mnetodos");
         //checar que esté declarado el método
+        
+       
+        
+        
+        //errro, nunca se están agregando los nodos de Declaracion metodo a la lista , por eso el codigop no se ejecuta
         for (DeclaracionMetodoNodo a : p.metodos) {
+            
             if (a.identificador.equals(identificador)) {
                 existe = true;
                 datos = a;
                 parametros = datos.getParametros().toArray(new ParametroNodo[0]);//crea el arreglo con el tamaño del set
+               
                 //checar si está vacío y si coincide con los parámetros del método, ya está fuera del for
-                if (posicion + 1 < tokens.size() && tokens.get(posicion + 1).lexema.equals(")")) {
+                if (verificar(")")) {
                     //checar que verdaderamente, ese identificador que corresponde a un método, no tiene parámetros
                     if (parametros.length != 0) {
                         throw new ParseException("Error en línea: " + tokenActual().linea + " La cantidad de parámetros no coincide con el método");
                     }
                     consumir(")");
-
-                    return new UsarMetodoNodo(identificador, a.getParametros());
+                    System.out.println("Retornar usarMetodNodo sin parametrso");
+                    return new UsarMetodoNodo(identificador, datos.getParametros());
                 }
 
                 //aquí empiezo a validar cuando tiene parametros pasados
@@ -504,7 +511,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
                 consumir("fin_metodo");
 
             }else{
-                throw new ParseException("Sintaxis de métodos: 'iniciar_metodo' <identificador>'('<parametros>')'<declaraciones><instrucciones> 'fin_metodo'");
+                throw new ParseException("Error en línea: "+tokenActual().linea+". Sintaxis de métodos: 'iniciar_metodo' <identificador>'('<parametros>')'<declaraciones><instrucciones> 'fin_metodo'");
             }
         }
 
