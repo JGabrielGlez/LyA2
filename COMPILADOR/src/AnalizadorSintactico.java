@@ -380,14 +380,6 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         consumir("(");
         boolean existe = false;
         DeclaracionMetodoNodo datos;
-       
-        System.out.println("Checando p.mnetodos");
-        //checar que esté declarado el método
-        
-       
-
-        
-            System.out.println("ANtes de entrar a for");
         //errro, nunca se están agregando los nodos de Declaracion metodo a la lista , por eso el codigop no se ejecuta
         for (DeclaracionMetodoNodo a : p.metodos) {
             
@@ -401,24 +393,30 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
                     consumir(")");
                     return new UsarMetodoNodo(identificador, new LinkedHashSet<>(parametros), posicion, posicion);
                 }
-
+                int i = 1;
+                //si la lista de parametros no está vacía, significa que espera parámetros
+                //por lo tanto, si encuentra un paréntesis de cierre, lanza error
+                if(posicion + 1 < tokens.size() && tokens.get(posicion + 1).lexema.equals(")")){
+                    throw new ParseException("Error en linea: "+tokenActual().linea+". El método requiere parámetros");}
+                
                 //aquí empiezo a validar cuando tiene parametros pasados
                 //se quiere usar un método con parámetros, debo checar tanto que los parámetros sean usados, como que 
                 //hayan sido previamente declarados
                 Analizador.Token t;
 
-                int i = 0;
-                for(; i<parametros.size();i++){
-                    System.out.println(parametros.get(i).tipo);
-                }
+               
                 while (hayTokens() && verificarTipo("IDENTIFICADOR")) {
                     t = tokenActual();
+                    System.out.println(t.tipo);
                     
                     //validar que la variable pasada como parametro, exista en la tabla de simbolos
                     validarVariableDeclarada(t.lexema, t.linea);
                     
                     //contador para avanzar en la lista de parametros de los datos
                     //checar que la cantidad de parametros sea la correcta, mirando hacia adelante
+                    if(i<parametros.size() && posicion + 1 < tokens.size() && !tokens.get(posicion + 1).lexema.equals(","))
+                        throw new ParseException("Error en línea: "+t.linea+". Se requieren más parámetros para el método "+a.identificador);
+                    
                     if (i == parametros.size() && posicion + 1 < tokens.size() && (tokens.get(posicion + 1).lexema.equals(",")) ) {
                         throw new ParseException("Error en línea: " + t.linea + " Cantidad de parámetros no coincide con los necesarios");
                     }
@@ -429,7 +427,15 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
                     //si la cantidad de parametros coincide y el sig token es el cierre del paréntesis, significa que ya se terminó el parseo
                     //para el nodo UsarMetodo
                     //verificar el tipo de parámetro pasado
-                    if (!t.tipo.equals(parametros.get(i++).getTipo())) {
+                    //buscar dentro de la tabla de simbolos ese identificador y traerme el tipo
+                    String tipo = "";
+                    for(Analizador.EntradaTablaSimbolos entrada : tablaSimbolos){
+                        if(entrada.getNombre().equals(t.lexema))
+                            tipo=entrada.getTipo();
+                    }
+                    
+                    if (!tipo.equals(parametros.get(i-1).getTipo())) {
+                        System.out.println(tipo+" tipo del parametro: "+parametros.get(i-1).getTipo());
                         throw new ParseException("Error en línea: "
                                 + t.linea + " tipo de parámetro no coincide, se esperaba un "
                                 + parametros.get(i-1).getTipo());
@@ -444,6 +450,7 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
                     }
 
                     consumir(",");
+                    i++;
                 }
                 if (!existe) {
                     throw new ParseException("Error en línea: " + tokenActual().linea + " Método " + identificador
@@ -463,14 +470,13 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         consumirTipo("IDENTIFICADOR");
         consumir("tipo");
         Analizador.Token token = tokenActual();//obtengo el token actual para compararlo con lo que espero
-        System.out.println(token.lexema);
+       
         
         //en este punto, ya capturé lo que es el tipo como tal del parametro
         String tipo =token.lexema;
         if(tipo.equals("numero"))consumir ("numero");
         else if(tipo.equals("Sensor"))consumir ("Sensor");
         else throw new ParseException("Se esperaba 'numero' o 'Sensor' en la línea: "+token.linea);
-        System.out.println(tipo+"Este es el tipo del parametro de cada nodo; checando si este es el error");
         return new ParametroNodo(identificador, tipo, parametro.linea, parametro.columna);
     }
     
