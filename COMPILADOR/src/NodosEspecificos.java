@@ -1,5 +1,5 @@
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -26,13 +26,13 @@ abstract class DeclaracionNodo  extends NodoAST{
  * Para: <declaracion_metodo> ::= "iniciar_metodo" <identificador> "("  <parametros>  ")"<declaraciones> <instrucciones>  "fin_metodo"
  */
 class DeclaracionMetodoNodo extends DeclaracionNodo{
-    private Set<ParametroNodo> parametros;
+    private LinkedHashSet<ParametroNodo> parametros;
     private List<DeclaracionNodo> declaraciones;
     private List<NodoAST> instrucciones;
 
     public DeclaracionMetodoNodo(String identificador, int linea, int columna) {
         super(identificador, linea, columna);
-        this.parametros = new HashSet<>();
+        this.parametros = new LinkedHashSet<>();
         this.instrucciones = new ArrayList<>();
         this.declaraciones = new ArrayList<>();
     }
@@ -65,11 +65,11 @@ return "";
 //throw new UnsupportedOperationException("Not supported yet."); 
     }
 
-    public Set<ParametroNodo> getParametros() {
+    public LinkedHashSet<ParametroNodo> getParametros() {
         return parametros;
     }
 
-    public void setParametros(Set<ParametroNodo> parametros) {
+    public void setParametros(LinkedHashSet<ParametroNodo> parametros) {
         this.parametros = parametros;
     }
     
@@ -123,7 +123,7 @@ return "";
  */
 
 class ParametroNodo extends NodoAST{
-    private String identificador, tipo;
+    public String identificador, tipo;
 
     public ParametroNodo(String identificador, String tipo) {
         this.identificador = identificador;
@@ -240,15 +240,15 @@ class DeclaracionNumeroNodo extends DeclaracionNodo {
 ////////nodo para usar los metodos id(parametros) y ya
     class UsarMetodoNodo extends NodoAST {
     private String identificador;
-    private Set<ParametroNodo> parametros;
+    private LinkedHashSet<ParametroNodo> parametros;
     public String toString(){return"";}
 
-    public UsarMetodoNodo(String identificador, Set<ParametroNodo> parametros) {
+    public UsarMetodoNodo(String identificador, LinkedHashSet<ParametroNodo> parametros) {
         this.identificador = identificador;
         this.parametros = parametros;
     }
 
-    public UsarMetodoNodo(String identificador, Set<ParametroNodo> parametros, int linea, int columna) {
+    public UsarMetodoNodo(String identificador, LinkedHashSet<ParametroNodo> parametros, int linea, int columna) {
         super(linea, columna);
         this.identificador = identificador;
         this.parametros = parametros;

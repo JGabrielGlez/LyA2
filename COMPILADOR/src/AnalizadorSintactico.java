@@ -1,6 +1,8 @@
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 
@@ -378,30 +380,26 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         consumir("(");
         boolean existe = false;
         DeclaracionMetodoNodo datos;
-        ParametroNodo[] parametros;
+       
         System.out.println("Checando p.mnetodos");
         //checar que esté declarado el método
         
        
+
         
-        
+            System.out.println("ANtes de entrar a for");
         //errro, nunca se están agregando los nodos de Declaracion metodo a la lista , por eso el codigop no se ejecuta
         for (DeclaracionMetodoNodo a : p.metodos) {
             
             if (a.identificador.equals(identificador)) {
                 existe = true;
                 datos = a;
-                parametros = datos.getParametros().toArray(new ParametroNodo[0]);//crea el arreglo con el tamaño del set
+                List<ParametroNodo> parametros = new ArrayList<>(a.getParametros());
                
-                //checar si está vacío y si coincide con los parámetros del método, ya está fuera del for
-                if (verificar(")")) {
-                    //checar que verdaderamente, ese identificador que corresponde a un método, no tiene parámetros
-                    if (parametros.length != 0) {
-                        throw new ParseException("Error en línea: " + tokenActual().linea + " La cantidad de parámetros no coincide con el método");
-                    }
+                //si la lista está vacía, significa que no tiene parámetros, por lo que se espera un paréntesis de cierre
+                if(parametros.isEmpty() && !verificarTipo("IDENTIFICADOR")) {
                     consumir(")");
-                    System.out.println("Retornar usarMetodNodo sin parametrso");
-                    return new UsarMetodoNodo(identificador, datos.getParametros());
+                    return new UsarMetodoNodo(identificador, new LinkedHashSet<>(parametros), posicion, posicion);
                 }
 
                 //aquí empiezo a validar cuando tiene parametros pasados
@@ -410,31 +408,39 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
                 Analizador.Token t;
 
                 int i = 0;
-
+                for(; i<parametros.size();i++){
+                    System.out.println(parametros.get(i).tipo);
+                }
                 while (hayTokens() && verificarTipo("IDENTIFICADOR")) {
                     t = tokenActual();
+                    
+                    //validar que la variable pasada como parametro, exista en la tabla de simbolos
+                    validarVariableDeclarada(t.lexema, t.linea);
+                    
                     //contador para avanzar en la lista de parametros de los datos
                     //checar que la cantidad de parametros sea la correcta, mirando hacia adelante
-                    if (i == parametros.length && posicion + 1 < tokens.size() && tokens.get(posicion + 1).lexema.equals(",")) {
+                    if (i == parametros.size() && posicion + 1 < tokens.size() && (tokens.get(posicion + 1).lexema.equals(",")) ) {
                         throw new ParseException("Error en línea: " + t.linea + " Cantidad de parámetros no coincide con los necesarios");
                     }
                     //buscar en la tabla de simbolos si existe ese id y si coincide con su tipo dato
-
+                    if(parametros.isEmpty()&&verificarTipo("IDENTIFICADOR")){
+                        throw new ParseException("Error en línea: " + t.linea + " Cantidad de parámetros no coincide con los necesarios");
+                    }
                     //si la cantidad de parametros coincide y el sig token es el cierre del paréntesis, significa que ya se terminó el parseo
                     //para el nodo UsarMetodo
                     //verificar el tipo de parámetro pasado
-                    if (!t.tipo.equals(parametros[i++].getTipo())) {
+                    if (!t.tipo.equals(parametros.get(i++).getTipo())) {
                         throw new ParseException("Error en línea: "
                                 + t.linea + " tipo de parámetro no coincide, se esperaba un "
-                                + parametros[i - 1].getTipo());
+                                + parametros.get(i-1).getTipo());
                     }
                     consumirTipo("IDENTIFICADOR");
                     
                     //Ya consumí el identificador, si el token actual es el cierre, debo retornar el nodo
-                    if (i == parametros.length && tokenActual().lexema.equals(")")) {
+                    if (i == parametros.size() && tokenActual().lexema.equals(")")) {
                         //pasado todo esto, ya puede retornar el nodo     
                         consumir(")");
-                        return new UsarMetodoNodo(identificador, new HashSet<>(Arrays.asList(parametros)));
+                        return new UsarMetodoNodo(identificador, new LinkedHashSet<>(parametros));
                     }
 
                     consumir(",");
@@ -459,11 +465,13 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         Analizador.Token token = tokenActual();//obtengo el token actual para compararlo con lo que espero
         System.out.println(token.lexema);
         
-        if(token.lexema.equals("numero"))consumir ("numero");
-        else if(token.lexema.equals("Sensor"))consumir ("Sensor");
+        //en este punto, ya capturé lo que es el tipo como tal del parametro
+        String tipo =token.lexema;
+        if(tipo.equals("numero"))consumir ("numero");
+        else if(tipo.equals("Sensor"))consumir ("Sensor");
         else throw new ParseException("Se esperaba 'numero' o 'Sensor' en la línea: "+token.linea);
-
-        return new ParametroNodo(identificador, token.tipo, parametro.linea, parametro.columna);
+        System.out.println(tipo+"Este es el tipo del parametro de cada nodo; checando si este es el error");
+        return new ParametroNodo(identificador, tipo, parametro.linea, parametro.columna);
     }
     
     //sobreescribir el método de parsear declaraciones para que acepte como parámetro un DeclaracionMetodoNodo
