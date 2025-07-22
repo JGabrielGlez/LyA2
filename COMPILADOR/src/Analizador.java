@@ -128,31 +128,43 @@ class Analizador {
      * declaraciones
      */
     private static void construirTablaSimbolos(List<Token> tokens){
-        // Limpiar tabla completa
-        tablaSimbolosCompleta.clear();
-
-        for (int i = 0; i < tokens.size(); i++) {
-            Token token = tokens.get(i);
-
-            // Detectar patrón de declaración: IDENTIFICADOR "tipo" TIPO "=" valor
-            if (esPatronDeclaracion(tokens, i)) {
-                String nombreVariable = token.lexema;
-                String tipoVariable = tokens.get(i + 2).lexema;
-                int lineaDeclaracion = token.linea;
-                int columnaDeclaracion = token.columna;
-
-                // Verificar que es un tipo válido
-                if (esTipoValido(tipoVariable)) {
-                    // Evitar duplicados en tabla completa
-                    if (!existeVariableEnTabla(nombreVariable)) {
-                        EntradaTablaSimbolos nuevaEntrada = new EntradaTablaSimbolos(
-                                nombreVariable, tipoVariable, lineaDeclaracion, columnaDeclaracion);
-                        tablaSimbolosCompleta.add(nuevaEntrada);
-                    }
+    // Limpiar tabla completa
+    tablaSimbolosCompleta.clear();
+    String ambito = "Global";
+    
+    for (int i = 0; i < tokens.size(); i++) {
+        Token token = tokens.get(i);
+        
+        // Si se encuentra "iniciar_metodo", el siguiente token es el nombre del método
+        if(token.lexema.equals("iniciar_metodo")) {
+            // Verificar que hay un token siguiente para evitar errores de tomar un token que no existe
+            if (i + 1 < tokens.size()) {
+                i++; // Avanzar al siguiente token
+                ambito = tokens.get(i).lexema; // Tomar el nombre del método como ámbito
+            }
+            continue; // Saltar al siguiente ciclo, no procesar "iniciar_metodo" como declaración
+        }
+        
+        // Detectar patrón de declaración: IDENTIFICADOR "tipo" TIPO "=" valor
+        // O patrón de parámetro: IDENTIFICADOR "tipo" TIPO
+        if (esPatronDeclaracion(tokens, i) || esPatronDeclaracionParametro(tokens, i)) {
+            String nombreVariable = token.lexema;
+            String tipoVariable = tokens.get(i + 2).lexema;
+            int lineaDeclaracion = token.linea;
+            int columnaDeclaracion = token.columna;
+            
+            // Verificar que es un tipo válido
+            if (esTipoValido(tipoVariable)) {
+                // Evitar duplicados usando tu método modificado
+                if (!existeVariableEnTabla(nombreVariable, ambito)) {
+                    EntradaTablaSimbolos nuevaEntrada = new EntradaTablaSimbolos(
+                            nombreVariable, tipoVariable, ambito, lineaDeclaracion, columnaDeclaracion);
+                    tablaSimbolosCompleta.add(nuevaEntrada);
                 }
             }
         }
     }
+}
     
      public static String obtenerPatronesPorLinea(List<Token> tokens) {
         StringBuilder resultado = new StringBuilder();
@@ -204,6 +216,17 @@ class Analizador {
                 && tokens.get(posicion + 3).lexema.equals("=");
     }
     
+    private static boolean esPatronDeclaracionParametro(List<Token> tokens, int posicion) {
+    // Verificar que hay suficientes tokens
+    if (posicion + 2 >= tokens.size()) {
+        return false;
+    }
+    
+    Token token = tokens.get(posicion);
+    return token.tipo.equals("IDENTIFICADOR") &&                    // nombreParametro
+           tokens.get(posicion + 1).lexema.equals("tipo") &&        // palabra "tipo"  
+           esTipoValido(tokens.get(posicion + 2).lexema);           // TIPO válido
+}
     
     public boolean esDeMetodo(){
         
@@ -221,10 +244,14 @@ class Analizador {
     /**
      * Verifica si una variable ya existe en la tabla completa
      */
-    private static boolean existeVariableEnTabla(String nombreVariable) {
-        return tablaSimbolosCompleta.stream()
-                .anyMatch(entrada -> entrada.getNombre().equals(nombreVariable));
-    }
+   private static boolean existeVariableEnTabla(String nombreVariable, String ambitoActual) {
+    return tablaSimbolosCompleta.stream()
+            .anyMatch(entrada -> 
+                entrada.getNombre().equals(nombreVariable) && 
+                (entrada.getAmbito().equals("Global") &&           // Variable global (visible en todos lados)
+                 entrada.getAmbito().equals(ambitoActual))         // Variable en ámbito actual
+            );
+}
 
     /**
      * Obtiene la tabla de símbolos completa
@@ -274,16 +301,27 @@ class Analizador {
 
         private String nombre;
         private String tipo;
+        private String ambito;
         private int lineaDeclaracion;
         private int columnaDeclaracion;
+        
 
         
         //constructor por defecto para ir agregando a la tabla los valores. 
-        public EntradaTablaSimbolos(String nombre, String tipo, int lineaDeclaracion, int columnaDeclaracion) {
+        public EntradaTablaSimbolos(String nombre, String tipo, String ambito, int lineaDeclaracion, int columnaDeclaracion) {
             this.nombre = nombre;
             this.tipo = tipo;
             this.lineaDeclaracion = lineaDeclaracion;
             this.columnaDeclaracion = columnaDeclaracion;
+            this.ambito=ambito;
+        }
+
+        public String getAmbito() {
+            return ambito;
+        }
+
+        public void setAmbito(String ambito) {
+            this.ambito = ambito;
         }
 
         // Getters
@@ -305,9 +343,9 @@ class Analizador {
 
         @Override
         public String toString() {
-            return String.format("%-15s | %-10s | L%-2d:C%-2d",
-                    nombre, tipo, lineaDeclaracion, columnaDeclaracion);
-        }
+    return String.format("%-15s | %-10s | %-15s | L%-2d:C%-2d",
+            nombre, tipo, ambito, lineaDeclaracion, columnaDeclaracion);
+}
 
         @Override
         public boolean equals(Object obj) {

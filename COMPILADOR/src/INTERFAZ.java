@@ -125,6 +125,7 @@ public class INTERFAZ extends javax.swing.JFrame {
         JPEditorTexto.setBackground(new java.awt.Color(255, 255, 255));
 
         JTAEditotText.setBorder(javax.swing.BorderFactory.createTitledBorder("Editor de Texto"));
+        JTAEditotText.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
         JTAEditotText.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
                 JTAEditotTextKeyReleased(evt);
@@ -706,6 +707,9 @@ public class INTERFAZ extends javax.swing.JFrame {
         
         //falta poner la tabla de símbolos
         
+        //parte del uso del codigo intermedio para hacer el ensamblador     
+        
+        
         
     }//GEN-LAST:event_JMCompilarMouseClicked
 
@@ -761,6 +765,9 @@ public class INTERFAZ extends javax.swing.JFrame {
 
        
         mostrarCuadruplosEnTabla(generador);
+        GeneradorCodigoObjeto c = new GeneradorCodigoObjeto(generador);
+        System.out.println(c.generarCodigoASM());
+                
     }//GEN-LAST:event_JMAnalisisSemanticoMouseClicked
 
     private void mostrarManual() {

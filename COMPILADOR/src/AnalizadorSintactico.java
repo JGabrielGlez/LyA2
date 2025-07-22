@@ -66,7 +66,17 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
     }
     // Agregar la variable al conjunto de declaradas
     variablesDeclaradasEnParsing.add(nombreVariable);
-}
+}   
+private void validarNoDuplicada(DeclaracionMetodoNodo a,String nombreVariable, int linea) throws ParseException {
+    if (a..contains(nombreVariable)) {
+        throw new ParseException("Variable '" + nombreVariable + 
+                               "' ya fue declarada previamente en línea " + linea);
+    }
+    // Agregar la variable al conjunto de declaradas
+    variablesDeclaradasEnParsing.add(nombreVariable);
+}   
+
+
 
 
 
@@ -469,6 +479,8 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
         //la estructura es id tipo numero|Sensor;
         Analizador.Token parametro= tokenActual();
         String identificador = parametro.lexema;
+        if(validarVariableDeclarada(identificador, parametro.linea))
+            
         consumirTipo("IDENTIFICADOR");
         consumir("tipo");
         Analizador.Token token = tokenActual();//obtengo el token actual para compararlo con lo que espero
@@ -541,6 +553,31 @@ private void validarNoDuplicada(String nombreVariable, int linea) throws ParseEx
     private DeclaracionNodo parsearDeclaracion() throws ParseException {
         // <identificador> "tipo" ("numero" | "Sensor") "=" <valor>
         Analizador.Token identificador = consumirTipo("IDENTIFICADOR");
+        consumir("tipo");
+        
+        Analizador.Token tipo = tokenActual();
+        
+        if (verificar("numero")) {
+            return parsearDeclaracionNumero(identificador);
+        } else if (verificar("Sensor")) {
+            return parsearDeclaracionSensor(identificador);
+        } else {
+            throw new ParseException("Se esperaba 'numero' o 'Sensor' después de 'tipo' en línea " + 
+                                   identificador.linea);
+        }
+    }
+    
+     private DeclaracionNodo parsearDeclaracion(DeclaracionMetodoNodo p) throws ParseException {
+        // <identificador> "tipo" ("numero" | "Sensor") "=" <valor>
+        Analizador.Token identificador = consumirTipo("IDENTIFICADOR");
+        
+        //verificar que ese identificador no esé en uso
+        for(Analizador.EntradaTablaSimbolos e: tablaSimbolos){
+            if(e.getNombre().equals(identificador) && e.getAmbito().equals("Global"));
+            throw new ParseException("Error en línea: "+identificador.linea+". Parámetros no pueden llevar el mismo nombre que las "
+                    + "variables globales");
+        }
+        
         consumir("tipo");
         
         Analizador.Token tipo = tokenActual();
