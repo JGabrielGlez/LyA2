@@ -18,7 +18,6 @@ public class GeneradorCódigoObjeto {
     private Map<String, String> mapeoTemporales;
     private Set<String> constantesEnteras;
     private Map<String, String> valoresTemporales;
-    private static final int SCALE_FACTOR = 10; 
 
     public GeneradorCódigoObjeto(List<InstruccionTAC> codigoIntermedio, List<Analizador.EntradaTablaSimbolos> tablaSimbolos) {
         this.codigoIntermedio = codigoIntermedio;
@@ -138,6 +137,8 @@ public class GeneradorCódigoObjeto {
                     String variable = instr.getArg1();
                     codigoEnsamblador.append("    MOV AX, ").append(valor).append("\n");
                     codigoEnsamblador.append("    MOV ").append(variable).append (", AX\n");
+                }else{
+                    codigoEnsamblador.append("    MOV ").append(instr.getResultado()).append(", ax\n");
                 }
                 break;
 
@@ -147,6 +148,8 @@ public class GeneradorCódigoObjeto {
                     String sensor = instr.getArg1();
                     codigoEnsamblador.append("    MOV AX, ").append(valor).append("\n");
                     codigoEnsamblador.append("    MOV ").append(sensor).append (", AX\n");
+                }else{
+                    codigoEnsamblador.append("    MOV ").append(instr.getResultado()).append(", ").append(instr.getArg1());
                 }
                 break;
 

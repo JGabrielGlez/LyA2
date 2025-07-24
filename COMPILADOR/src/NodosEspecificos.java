@@ -411,7 +411,7 @@ class NumeroNodo extends ExpresionNodo {
     
     public NumeroNodo(double valor, int linea, int columna) {
         super(linea, columna);
-        this.valor = (int)(valor*100);
+        this.valor = (int)(valor);
         
         //los numeros estarán escalados por 100, por lo que para obtener su valor real
         //será necesario dividir entre 100
