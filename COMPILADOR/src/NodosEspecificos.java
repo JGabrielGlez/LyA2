@@ -407,11 +407,14 @@ class ExpresionAritmeticaNodo extends ExpresionNodo {
  * Para números literales: 5, 3.14, etc.
  */
 class NumeroNodo extends ExpresionNodo {
-    private double valor;
+    private int valor;
     
     public NumeroNodo(double valor, int linea, int columna) {
         super(linea, columna);
-        this.valor = valor;
+        this.valor = (int)(valor*100);
+        
+        //los numeros estarán escalados por 100, por lo que para obtener su valor real
+        //será necesario dividir entre 100
     }
     
     @Override
@@ -430,10 +433,12 @@ class NumeroNodo extends ExpresionNodo {
     
     public double getValor() { return valor; }
 
+    
+    
     @Override
     public String generarCodigoIntermedio(GeneradorCodigoIntermedio generador) {
-    return valor+""; 
-    }
+            return valor+"";
+        }
 }
 
 /**

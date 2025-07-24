@@ -1,39 +1,48 @@
 .MODEL SMALL
-.STACK 
+.STACK 100h
 
 .DATA
-    numoers DW ?
+    const_33 DW 33
+    const_200 DW 200
+    const_300 DW 300
+    numero1 DW ?
+    numero2 DW ?
+    sen DW ?
+    temp_t0 DW ?
+    temp_t1 DW ?
+    temp_t2 DW ?
+    temp_t3 DW ?
 
 .CODE
     MOV AX, @DATA
     MOV DS, AX
+; *, t0, 200, 200
+    MOV AX, const_200
+    IMUL const_200
+    MOV temp_t0, AX
 
-; DECL_SENSOR, sensor1, 3
-    ; Declaración de variable, manejada en .DATA
+; +, t1, 200, 200
+    MOV AX, const_200
+    ADD AX, const_200
+    MOV temp_t1, AX
 
-; +, t0, 3.0, 3.0
-    MOV AX, 3.0
-    ADD AX, 3.0
+; +, t2, t1, t0
+    MOV AX, temp_t1
+    ADD AX, temp_t0
+    MOV temp_t2, AX
 
-; +, t1, t0, 3.0
-    MOV AX, t0
-    ADD AX, 3.0
+; DECL_NUMERO, numero1, t2
 
-; +, t2, t1, 3.0
-    MOV AX, t1
-    ADD AX, 3.0
+; +, t3, 200, 300
+    MOV AX, const_200
+    ADD AX, const_300
+    MOV temp_t3, AX
 
-; DECL_NUMERO, numoers, t2
-    ; Declaración de variable, manejada en .DATA
+; DECL_NUMERO, numero2, t3
 
-; ENCENDER_LED, verde
-    call ENCENDER_LED verde
-
-; APAGAR_LED, verde
-    call APAGAR_LED verde
+; DECL_SENSOR, sen, 33
 
 
-    MOV AX, 4C00h
+    MOV AH, 4Ch
     INT 21h
-
 END

@@ -748,62 +748,26 @@ public class INTERFAZ extends javax.swing.JFrame {
        if(generador ==null){
            JOptionPane.showMessageDialog(null,
                    "Es necesario compilar el programa antes");
-           
+           return;
        }
        JTAConsola.setText("Cuadruplos generados");
        mostrarCuadruplosEnTabla(generador);
     }//GEN-LAST:event_JMAnalisisSemanticoMouseClicked
 
     private void JMTraducirProgramaMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_JMTraducirProgramaMouseClicked
-String codigoFuenteDePrueba=JTAEditotText.getText();
-
-try {
-            
-            List<Analizador.Token> tokens = Analizador.analizarLexico(codigoFuenteDePrueba);
-            
-            // Verificar errores léxicos
-            StringBuilder erroresLexicos = new StringBuilder();
-            for (Analizador.Token token : tokens) {
-                if ("ERROR LEXICO".equals(token.tipo)) {
-                    erroresLexicos.append("Error léxico: '").append(token.lexema)
-                               .append("' en línea ").append(token.linea).append("\n");
-                }
-            }
-            if (erroresLexicos.length() > 0) {
-                System.err.println("Errores durante el análisis léxico:\n" + erroresLexicos.toString());
-                return; 
-            }
-
-            List<Analizador.EntradaTablaSimbolos> tablaSimbolos = Analizador.getTablaSimbolosCompleta();
-
-            // Instancia el AnalizadorSintactico
-            AnalizadorSintactico analizadorSintactico = 
-                new AnalizadorSintactico(tokens, tablaSimbolos);
-            
-            // Solo parsear el código para obtener el AST
-            ProgramaNodo programaAST = analizadorSintactico.parsear(tokens, tablaSimbolos); 
-
-            if (analizadorSintactico.getErrores().length() > 0) {
-                System.err.println("Errores durante la compilación:\n");
-                System.err.println(analizadorSintactico.getErrores().toString());
-            } else if (programaAST != null) {
-                System.out.println("Análisis sintáctico completado con éxito.\n");
-                
-                // === Generación de Código Intermedio (TAC) ===
-                System.out.println("--- Generando Código Intermedio (Cuádruplos) ---\n");
-                GeneradorCodigoIntermedio generadorCodigoIntermedio = new GeneradorCodigoIntermedio();
-                // Pasa el generador al AST para que genere el código
-                programaAST.generaCodigoIntermedio(generadorCodigoIntermedio);
-                
-                List<InstruccionTAC> cuadruplos = generadorCodigoIntermedio.getCodigo();
-                generadorCodigoIntermedio.imprimirCuadruplosEnTabla();
-
+       if(generador ==null){
+           JOptionPane.showMessageDialog(null,
+                   "Es necesario compilar el programa antes");
+           return;
+       }
+        
+        
+               
                 System.out.println("\n--- Generando Código Ensamblador para EMU8086 ---");
-                List<Analizador.EntradaTablaSimbolos> tablaSimbolosCompleta = Analizador.getTablaSimbolosCompleta();
 
                 // Instanciar el GeneradorCódigoObjeto con los cuádruplos y la tabla de símbolos
                 GeneradorCódigoObjeto generadorEnsamblador =
-                    new GeneradorCódigoObjeto(cuadruplos, tablaSimbolosCompleta);
+                    new GeneradorCódigoObjeto(generador.getCodigo(), Analizador.getTablaSimbolosCompleta());
 
                 // Generar el código ensamblador completo
                 String codigoEnsamblador = generadorEnsamblador.generarCodigo();
@@ -812,16 +776,7 @@ try {
                 // Guardar el código ensamblador en el archivo "salidaa.asm"
                 generadorEnsamblador.guardarEnsambladorEnArchivo("salidaaa.asm");
                 
-            } else {
-                System.err.println("Error desconocido: No se pudo construir el AST.");
-            }
-
-        } catch (Exception e) {
-            System.err.println("¡Ocurrió un error inesperado durante la compilación!");
-            e.printStackTrace(); 
-        }
-
-        System.out.println("\n--- Proceso de Compilación Finalizado ---");
+           
         }//GEN-LAST:event_JMTraducirProgramaMouseClicked
 
     private void mostrarManual() {

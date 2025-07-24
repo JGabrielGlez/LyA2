@@ -3,9 +3,10 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/Users/oswal/OneDrive/Desktop/LyA2-gabriel/COMPILADOR/src/INTERFAZ.java</file>
-            <file>file:/C:/Users/oswal/OneDrive/Desktop/LyA2-gabriel/COMPILADOR/src/CompiladorConsola.java</file>
-            <file>file:/C:/Users/oswal/OneDrive/Desktop/LyA2-gabriel/COMPILADOR/src/GeneradorCódigoObjeto.java</file>
+            <file>file:/C:/Users/Jesus/Desktop/Escuela/VeranoSem7/LyA2/LyA2/COMPILADOR/src/INTERFAZ.java</file>
+            <file>file:/C:/Users/Jesus/Desktop/Escuela/VeranoSem7/LyA2/LyA2/COMPILADOR/src/NodosEspecificos.java</file>
+            <file>file:/C:/Users/Jesus/Desktop/Escuela/VeranoSem7/LyA2/LyA2/COMPILADOR/src/GeneradorCódigoObjeto.java</file>
+            <file>file:/C:/Users/Jesus/Desktop/Escuela/VeranoSem7/LyA2/LyA2/COMPILADOR/src/GeneradorCodigoIntermedio.java</file>
         </group>
     </open-files>
 </project-private>
