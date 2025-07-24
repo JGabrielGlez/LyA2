@@ -75,7 +75,7 @@ public class GeneradorCódigoObjeto {
         
         for (int i = 0; i < codigoIntermedio.size(); i++) {
             InstruccionTAC instr = codigoIntermedio.get(i);
-            if ((instr.getOperacion().equals("+") || instr.getOperacion().equals("*")) 
+            if ((instr.getOperacion().equals("+") || instr.getOperacion().equals("*")||instr.getOperacion().equals("/")||instr.getOperacion().equals("-")) 
                 && instr.getResultado() != null && instr.getResultado().startsWith("t")) {
                 String temporal = instr.getResultado();
                 for (int j = i + 1; j < codigoIntermedio.size(); j++) {
@@ -168,6 +168,15 @@ public class GeneradorCódigoObjeto {
                 codigoEnsamblador.append("    ADD AX, ").append(op2Add).append("\n");
                 codigoEnsamblador.append("    MOV ").append(resAdd).append (", AX\n");
                 break;
+            
+            case "-":
+                String op1Sub = obtenerValorORegistro(instr.getArg1());
+                String op2Sub = obtenerValorORegistro(instr.getArg2());
+                String resSub = obtenerValorORegistro(instr.getResultado());
+                codigoEnsamblador.append("    MOV AX, ").append(op1Sub).append("\n");
+                codigoEnsamblador.append("    SUB AX, ").append(op2Sub).append("\n");
+                codigoEnsamblador.append("    MOV ").append(resSub).append (", AX\n");
+                break;    
 
             case "*":
                 String op1Mul = obtenerValorORegistro(instr.getArg1());
@@ -177,6 +186,15 @@ public class GeneradorCódigoObjeto {
                 codigoEnsamblador.append("    IMUL ").append(op2Mul).append("\n");
                 codigoEnsamblador.append("    MOV ").append(resMul).append (", AX\n");
                 break;
+                
+            case "/":
+                String op1Div = obtenerValorORegistro(instr.getArg1());
+                String op2Div = obtenerValorORegistro(instr.getArg2());
+                String resDiv = obtenerValorORegistro(instr.getResultado());
+                codigoEnsamblador.append("    MOV AX, ").append(op1Div).append("\n");
+                codigoEnsamblador.append("    IDIV ").append(op2Div).append("\n");
+                codigoEnsamblador.append("    MOV ").append(resDiv).append (", AX\n");
+                break;    
 
             case "MENORQUE":
                 String op1Comp = obtenerValorORegistro(instr.getArg1());
